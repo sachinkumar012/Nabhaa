@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, Send, Volume2, VolumeX, Calendar, X, MessageCircle, CheckCircle } from "lucide-react";
 
-const API_KEY = "AIzaSyCAzGYeMcfLMCp1ghvQWBX2xdbLhbJS1Go"; // Gemini API Key
+const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY; // Gemini API Key
 
 // SMS API Configuration
 const SMS_CONFIG = {
