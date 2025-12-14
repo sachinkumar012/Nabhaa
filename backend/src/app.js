@@ -20,6 +20,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Rate Limiting
+app.set('trust proxy', 1); // Trust first proxy (Render/Heroku)
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100 // limit each IP to 100 requests per windowMs
