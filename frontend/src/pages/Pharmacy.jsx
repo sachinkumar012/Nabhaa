@@ -44,7 +44,7 @@ const Pharmacy = () => {
   useEffect(() => {
     const fetchMedicines = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/medicines?page=${currentPage}&limit=${itemsPerPage}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/medicines?page=${currentPage}&limit=${itemsPerPage}`);
         if (!response.ok) {
           throw new Error('Failed to fetch medicines');
         }
@@ -294,7 +294,7 @@ const Pharmacy = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/send-otp', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailOtp })
@@ -317,7 +317,7 @@ const Pharmacy = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailOtp, otp: otpCode })
@@ -407,7 +407,7 @@ const Pharmacy = () => {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

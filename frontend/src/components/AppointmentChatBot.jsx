@@ -368,7 +368,7 @@ const AppointmentChatBot = () => {
 
     addMessage("🔄 Processing your appointment...", 'bot');
     try {
-      const response = await fetch('http://localhost:5000/api/appointments', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

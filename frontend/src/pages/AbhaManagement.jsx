@@ -32,7 +32,7 @@ const AbhaManagement = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('http://localhost:5000/api/abha/generate-otp', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/abha/generate-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mobile })
@@ -56,7 +56,7 @@ const AbhaManagement = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('http://localhost:5000/api/abha/verify-otp', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/abha/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ otp, transactionId: txnId })
@@ -96,7 +96,7 @@ const AbhaManagement = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('http://localhost:5000/api/abha/create', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/abha/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tempToken, ...formData })
@@ -117,7 +117,7 @@ const AbhaManagement = () => {
 
     const fetchProfile = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/abha/profile');
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/abha/profile`);
             const data = await response.json();
             if (data.success) {
                 setAbhaProfile(data.data);

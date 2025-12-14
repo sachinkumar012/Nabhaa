@@ -45,7 +45,7 @@ const LANGUAGES = {
 const BACKEND_CONFIG = {
   API_BASE_URL: process.env.NODE_ENV === 'production'
     ? 'https://your-backend-api.com/api'
-    : 'http://localhost:5000/api',
+    : `${import.meta.env.VITE_API_URL}/api`,
   ENDPOINTS: {
     SAVE_CHAT: '/chat/save',
     LOAD_CHAT: '/chat/load',
