@@ -2,10 +2,11 @@ const nodemailer = require('nodemailer');
 
 const sendAppointmentEmail = async (email, appointmentDetails) => {
     try {
+        const port = Number(process.env.SMTP_PORT);
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: Number(process.env.SMTP_PORT),
-            secure: false, // true for 465, false for other ports
+            port: port,
+            secure: port === 465, // true for 465, false for 587
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS.replace(/\s+/g, '') // Remove spaces if present
@@ -48,10 +49,11 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
 
 const sendOtpEmail = async (email, otp) => {
     try {
+        const port = Number(process.env.SMTP_PORT);
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: Number(process.env.SMTP_PORT),
-            secure: false,
+            port: port,
+            secure: port === 465,
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS.replace(/\s+/g, '') // Remove spaces
