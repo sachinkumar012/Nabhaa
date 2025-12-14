@@ -6,10 +6,16 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
             port: port,
-            secure: port === 465, // true for 465, false for 587
+            secure: port === 465,
             auth: {
                 user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS.replace(/\s+/g, '') // Remove spaces if present
+                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+            },
+            connectionTimeout: 10000, // 10 seconds
+            logger: true,
+            debug: true,
+            tls: {
+                rejectUnauthorized: false // Helps if certificates are weird
             }
         });
 
@@ -56,7 +62,13 @@ const sendOtpEmail = async (email, otp) => {
             secure: port === 465,
             auth: {
                 user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS.replace(/\s+/g, '') // Remove spaces
+                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+            },
+            connectionTimeout: 10000,
+            logger: true,
+            debug: true,
+            tls: {
+                rejectUnauthorized: false
             }
         });
 
