@@ -29,7 +29,7 @@ app.use(limiter);
 
 // Routes
 app.get('/', (req, res) => {
-    res.send('Nabha Healthcare API is running...');
+    res.send('Nabha Healthcare API is running... (v2 - Debug Mode)');
 });
 
 const doctorRoutes = require('./routes/doctorRoutes');
