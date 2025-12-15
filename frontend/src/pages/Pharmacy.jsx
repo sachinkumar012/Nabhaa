@@ -3200,7 +3200,7 @@ const Pharmacy = () => {
             {currentView === 'lab-tests' && (
               <div className="lab-tests-container" style={{ paddingBottom: '2rem' }}>
                 <div style={{ marginTop: '2rem' }}>
-                  <LabTests />
+                  <LabTests user={currentCustomer} />
                 </div>
               </div>
             )}

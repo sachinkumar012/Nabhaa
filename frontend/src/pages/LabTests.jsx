@@ -1,19 +1,82 @@
-import React, { useState } from 'react';
-import { Search, Filter, ChevronDown, ChevronUp, CheckCircle, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, ChevronDown, ChevronUp, CheckCircle, Info, Clock } from 'lucide-react';
+import LabTestDetailsModal from '../components/Pharmacy/LabTestDetailsModal';
+import LabBookingModal from '../components/Pharmacy/LabBookingModal';
 
-const LabTests = () => {
+const LabTests = ({ user }) => {
     const [activeFaq, setActiveFaq] = useState(null);
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
 
-    const checkups = [
-        { id: 1, title: 'Full Body Checkup', price: 1499, originalPrice: 2999, category: 'Health Packages', description: 'Includes 75+ tests: Liver, Kidney, Lipid Profile, Thyroid, and more.' },
-        { id: 2, title: 'Diabetes Screening', price: 499, originalPrice: 999, category: 'Diabetes', description: 'HbA1c, Fasting Blood Sugar, and Urine Glucose.' },
-        { id: 3, title: 'Thyroid Profile', price: 399, originalPrice: 799, category: 'Hormonal', description: 'T3, T4, and TSH levels check.' },
-        { id: 4, title: 'Vitamin Deficiency Panel', price: 899, originalPrice: 1599, category: 'Vitamins', description: 'Vitamin B12, Vitamin D, and Calcium.' },
-        { id: 6, title: 'Heart Health Package', price: 1299, originalPrice: 2499, category: 'Heart', description: 'ECG, Lipid Profile, Troponin-I, and hs-CRP.' },
-        { id: 7, title: 'Kidney Function Test', price: 599, originalPrice: 1199, category: 'Kidney', description: 'Creatinine, Urea, Uric Acid, Sodium, Potassium, and Chloride.' },
-    ];
+    // Dynamic Data State
+    const [tests, setTests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Modal State
+    const [selectedTest, setSelectedTest] = useState(null);
+    const [bookingTest, setBookingTest] = useState(null);
+
+    useEffect(() => {
+        const fetchTests = async () => {
+            try {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lab-tests/tests`);
+                if (!response.ok) throw new Error('Failed to fetch lab tests');
+                const data = await response.json();
+                setTests(data.data);
+                setLoading(false);
+            } catch (err) {
+                console.error("Error loading lab tests:", err);
+                setError(err.message);
+                setLoading(false);
+            }
+        };
+
+        fetchTests();
+    }, []);
+
+    const handleViewDetails = async (testId) => {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lab-tests/tests/${testId}`);
+            if (!response.ok) throw new Error('Failed to fetch test details');
+            const data = await response.json();
+            setSelectedTest({ ...data.data, suggestions: data.recommendations });
+        } catch (error) {
+            console.error("Error fetching test details:", error);
+            alert("Failed to load details");
+        }
+    };
+
+    const handleBookTest = (test) => {
+        setBookingTest(test);
+        setSelectedTest(null); // Close details if open
+    };
+
+    const handleBookingSubmit = async (formData, test) => {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lab-tests/book`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    testId: test._id,
+                    patientDetails: formData,
+                    userId: user ? user.id : null // Optional if user is logged in
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(`✅ Booking Confirmed!\nBooking ID: ${data.bookingId}\nPlease check your email for details.`);
+                setBookingTest(null);
+            } else {
+                alert(`Booking failed: ${data.message}`);
+            }
+        } catch (error) {
+            console.error("Booking error:", error);
+            alert("An error occurred while booking. Please try again.");
+        }
+    };
 
     const faqs = [
         { question: 'How often should you get a full body checkup?', answer: 'It is recommended to get a full body checkup once a year for adults over 18, and more frequently if you have existing health conditions.' },
@@ -29,14 +92,17 @@ const LabTests = () => {
         { question: 'What is the Importance of Annual Health Check?', answer: 'Annual checks help in early detection of diseases, monitoring existing conditions, and maintaining overall wellness.' },
     ];
 
-    const filteredCheckups = checkups.filter(checkup =>
-        (filter === 'All' || checkup.category === filter) &&
-        checkup.title.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredTests = tests.filter(test =>
+        (filter === 'All' || test.category === filter) &&
+        test.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const toggleFaq = (index) => {
         setActiveFaq(activeFaq === index ? null : index);
     };
+
+    if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#115E59]"></div></div>;
+    if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">Error: {error}</div>;
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
@@ -89,27 +155,34 @@ const LabTests = () => {
                     <div className="w-full md:w-3/4">
                         <h2 className="text-2xl font-bold text-gray-800 mb-6">Popular Checkups</h2>
                         <div className="grid gap-6">
-                            {filteredCheckups.map(checkup => (
-                                <div key={checkup.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center hover:shadow-md transition-shadow">
-                                    <div className="mb-4 sm:mb-0">
+                            {filteredTests.map(test => (
+                                <div key={test._id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center hover:shadow-md transition-shadow">
+                                    <div className="mb-4 sm:mb-0 flex-1">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="bg-teal-50 text-teal-700 text-xs px-2 py-1 rounded font-medium">{checkup.category}</span>
+                                            <span className="bg-teal-50 text-teal-700 text-xs px-2 py-1 rounded font-medium">{test.category}</span>
+                                            {test.reportsWithin && <span className="text-xs text-gray-500 flex items-center gap-1"><Clock size={12} /> {test.reportsWithin}</span>}
                                         </div>
-                                        <h3 className="text-xl font-bold text-gray-800 mb-2">{checkup.title}</h3>
-                                        <p className="text-gray-500 text-sm mb-3 max-w-md">{checkup.description}</p>
-                                        <div className="flex items-center gap-2 text-sm text-green-600">
+                                        <h3 className="text-xl font-bold text-gray-800 mb-2">{test.title}</h3>
+                                        <p className="text-gray-500 text-sm mb-3 max-w-md line-clamp-2">{test.description}</p>
+                                        <div className="flex items-center gap-2 text-sm text-green-600 mb-2">
                                             <CheckCircle size={16} />
                                             <span>Certified Labs</span>
                                             <CheckCircle size={16} className="ml-2" />
                                             <span>Free Home Collection</span>
                                         </div>
+                                        <button onClick={() => handleViewDetails(test._id)} className="text-[#115E59] text-sm font-medium hover:underline flex items-center gap-1">
+                                            <Info size={14} /> View Details & Benefits
+                                        </button>
                                     </div>
                                     <div className="flex flex-col items-end gap-3 min-w-[140px]">
                                         <div className="text-right">
-                                            <span className="text-gray-400 line-through text-sm">₹{checkup.originalPrice}</span>
-                                            <div className="text-2xl font-bold text-[#115E59]">₹{checkup.price}</div>
+                                            <span className="text-gray-400 line-through text-sm">₹{test.originalPrice}</span>
+                                            <div className="text-2xl font-bold text-[#115E59]">₹{test.price}</div>
                                         </div>
-                                        <button className="bg-[#115E59] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#0d4a46] transition-colors w-full">
+                                        <button
+                                            onClick={() => handleBookTest(test)}
+                                            className="bg-[#115E59] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#0d4a46] transition-colors w-full"
+                                        >
                                             Book Now
                                         </button>
                                     </div>
@@ -143,6 +216,25 @@ const LabTests = () => {
                 </div>
 
             </div>
+
+            {/* Modals */}
+            {selectedTest && (
+                <LabTestDetailsModal
+                    test={selectedTest}
+                    onClose={() => setSelectedTest(null)}
+                    onBook={(test) => handleBookTest(test)}
+                />
+            )}
+
+            {bookingTest && (
+                <LabBookingModal
+                    test={bookingTest}
+                    user={user}
+                    onClose={() => setBookingTest(null)}
+                    onSubmit={handleBookingSubmit}
+                />
+            )}
+
         </div>
     );
 };

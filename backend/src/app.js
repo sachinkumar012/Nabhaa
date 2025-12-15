@@ -43,6 +43,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/abha', abhaRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/lab-tests', require('./routes/labRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

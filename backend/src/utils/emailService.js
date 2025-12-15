@@ -102,4 +102,51 @@ const sendOtpEmail = async (email, otp) => {
     }
 };
 
-module.exports = { sendAppointmentEmail, sendOtpEmail };
+const sendLabBookingConfirmation = async (email, details) => {
+    try {
+        const port = Number(process.env.SMTP_PORT);
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: port,
+            secure: port === 465,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+            },
+            tls: { rejectUnauthorized: false }
+        });
+
+        const message = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                <h2 style="color: #115E59;">Lab Test Booking Confirmed! 🧪</h2>
+                <p>Dear <strong>${details.patientName}</strong>,</p>
+                <p>Your lab test booking has been confirmed.</p>
+                
+                <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Test Name:</strong> ${details.testName}</p>
+                    <p><strong>Booking ID:</strong> ${details.orderId}</p>
+                    <p><strong>Date:</strong> ${details.date}</p>
+                    <p><strong>Amount to Pay:</strong> ₹${details.price}</p>
+                </div>
+
+                <p>Our team will contact you shortly for sample collection.</p>
+                <p>Best regards,<br>Nabha Healthcare Team</p>
+            </div>
+        `;
+
+        await transporter.sendMail({
+            from: `"Nabha Healthcare" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: "Lab Test Booking Confirmed - Nabha Healthcare",
+            html: message
+        });
+
+        console.log("Lab Booking Email sent to:", email);
+        return true;
+    } catch (error) {
+        console.error("Error sending Lab Booking email:", error);
+        return false;
+    }
+};
+
+module.exports = { sendAppointmentEmail, sendOtpEmail, sendLabBookingConfirmation };
