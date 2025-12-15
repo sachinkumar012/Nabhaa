@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ChevronDown, ChevronUp, CheckCircle, Info, Clock } from 'lucide-react';
-import LabTestDetailsModal from '../components/Pharmacy/LabTestDetailsModal';
+import { Search, Filter, ChevronDown, ChevronUp, CheckCircle, Info, Clock, Calendar } from 'lucide-react';
+import LabTestDetailsView from '../components/Pharmacy/LabTestDetailsView';
+import MyLabBookingsView from '../components/Pharmacy/MyLabBookingsView';
 import LabBookingModal from '../components/Pharmacy/LabBookingModal';
 
 const LabTests = ({ user }) => {
+    const [view, setView] = useState('list'); // 'list', 'details', 'my-bookings'
+
+    // List View State
     const [activeFaq, setActiveFaq] = useState(null);
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
-
-    // Dynamic Data State
     const [tests, setTests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Modal State
-    const [selectedTest, setSelectedTest] = useState(null);
+    // Selected Test for Details View
+    const [selectedDetailTest, setSelectedDetailTest] = useState(null);
+
+    // Booking State
     const [bookingTest, setBookingTest] = useState(null);
 
     useEffect(() => {
@@ -36,20 +40,24 @@ const LabTests = ({ user }) => {
     }, []);
 
     const handleViewDetails = async (testId) => {
+        setLoading(true);
         try {
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lab-tests/tests/${testId}`);
             if (!response.ok) throw new Error('Failed to fetch test details');
             const data = await response.json();
-            setSelectedTest({ ...data.data, suggestions: data.recommendations });
+            setSelectedDetailTest({ ...data.data, suggestions: data.recommendations });
+            setView('details');
+            window.scrollTo(0, 0); // Scroll to top
         } catch (error) {
             console.error("Error fetching test details:", error);
             alert("Failed to load details");
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleBookTest = (test) => {
         setBookingTest(test);
-        setSelectedTest(null); // Close details if open
     };
 
     const handleBookingSubmit = async (formData, test) => {
@@ -60,7 +68,7 @@ const LabTests = ({ user }) => {
                 body: JSON.stringify({
                     testId: test._id,
                     patientDetails: formData,
-                    userId: user ? user.id : null // Optional if user is logged in
+                    userId: user ? user.id : null
                 })
             });
 
@@ -69,6 +77,8 @@ const LabTests = ({ user }) => {
             if (data.success) {
                 alert(`✅ Booking Confirmed!\nBooking ID: ${data.bookingId}\nPlease check your email for details.`);
                 setBookingTest(null);
+                // Optionally switch to my bookings view
+                setView('my-bookings');
             } else {
                 alert(`Booking failed: ${data.message}`);
             }
@@ -101,6 +111,26 @@ const LabTests = ({ user }) => {
         setActiveFaq(activeFaq === index ? null : index);
     };
 
+    if (view === 'details' && selectedDetailTest) {
+        return (
+            <LabTestDetailsView
+                test={selectedDetailTest}
+                onBack={() => setView('list')}
+                onBook={handleBookTest}
+                onSuggestionClick={handleViewDetails}
+            />
+        );
+    }
+
+    if (view === 'my-bookings') {
+        return (
+            <MyLabBookingsView
+                user={user}
+                onBack={() => setView('list')}
+            />
+        );
+    }
+
     if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#115E59]"></div></div>;
     if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">Error: {error}</div>;
 
@@ -108,7 +138,18 @@ const LabTests = ({ user }) => {
         <div className="min-h-screen bg-gray-50 pb-20">
             {/* Header Section */}
             <div className="bg-[#115E59] text-white py-12 px-4 shadow-md">
-                <div className="container mx-auto max-w-5xl text-center">
+                <div className="container mx-auto max-w-5xl text-center relative">
+
+                    {/* My Bookings Button */}
+                    <div className="absolute top-0 right-0">
+                        <button
+                            onClick={() => setView('my-bookings')}
+                            className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors"
+                        >
+                            <Calendar size={16} /> My Bookings
+                        </button>
+                    </div>
+
                     <h1 className="text-4xl font-bold mb-4 text-white" style={{ WebkitTextFillColor: 'white' }}>Lab Tests & Health Packages</h1>
                     <p className="text-lg opacity-90 mb-8">Book comprehensive health checkups from the comfort of your home.</p>
 
@@ -217,15 +258,7 @@ const LabTests = ({ user }) => {
 
             </div>
 
-            {/* Modals */}
-            {selectedTest && (
-                <LabTestDetailsModal
-                    test={selectedTest}
-                    onClose={() => setSelectedTest(null)}
-                    onBook={(test) => handleBookTest(test)}
-                />
-            )}
-
+            {/* Booking Modal (Global for all views) */}
             {bookingTest && (
                 <LabBookingModal
                     test={bookingTest}
