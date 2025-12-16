@@ -141,6 +141,18 @@ const VideoCallRoom = () => {
     return pc;
   };
 
+
+
+  const initializeUser = () => {
+    // Check if user is coming from doctor link or patient
+    const urlParams = new URLSearchParams(window.location.search);
+    const type = urlParams.get('type') || 'patient';
+    const name = urlParams.get('name') || (type === 'doctor' ? 'Doctor' : 'Patient');
+
+    setUserType(type);
+    setUserName(name);
+  };
+
   const startCall = async () => {
     try {
       setConnectionStatus('connecting');
