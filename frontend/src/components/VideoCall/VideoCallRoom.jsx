@@ -69,13 +69,14 @@ const VideoCallRoom = () => {
     });
 
     socket.on('receive-offer', async (offer) => {
-      console.log('Received offer');
+      console.log('socket: receive-offer', offer);
       if (!peerConnection.current) createPeerConnection();
 
       await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await peerConnection.current.createAnswer();
       await peerConnection.current.setLocalDescription(answer);
 
+      console.log('sending answer');
       socket.emit('answer', { answer, roomId: callId });
       setConnectionStatus('connected');
       setIsCallStarted(true);
@@ -83,7 +84,7 @@ const VideoCallRoom = () => {
     });
 
     socket.on('receive-answer', async (answer) => {
-      console.log('Received answer');
+      console.log('socket: receive-answer', answer);
       if (peerConnection.current) {
         await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
         setConnectionStatus('connected');
@@ -93,7 +94,7 @@ const VideoCallRoom = () => {
     });
 
     socket.on('receive-ice-candidate', async (candidate) => {
-      console.log('Received ICE candidate');
+      console.log('socket: receive-ice-candidate');
       if (peerConnection.current) {
         await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
       }
@@ -111,6 +112,7 @@ const VideoCallRoom = () => {
   }, [callId]);
 
   const createPeerConnection = () => {
+    console.log('Creating RTCPeerConnection');
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -120,12 +122,13 @@ const VideoCallRoom = () => {
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('sending ice-candidate');
         socket.emit('ice-candidate', { candidate: event.candidate, roomId: callId });
       }
     };
 
     pc.ontrack = (event) => {
-      console.log('Received remote track');
+      console.log('Received remote track', event.streams[0]);
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
