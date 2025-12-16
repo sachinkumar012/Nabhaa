@@ -25,6 +25,15 @@ const SimpleVideoBooking = ({ doctor, onClose }) => {
     const callId = `instant-${doctor.id}-${Date.now().toString(36)}`;
     const callUrl = `${window.location.origin}/video-call/${callId}?type=patient&name=${encodeURIComponent(currentPatient.name)}`;
 
+    // Open window IMMEDIATELY to avoid popup blockers
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write('Loading video call room... Please wait.');
+    } else {
+      alert('Please allow popups for this site to start the call.');
+      return;
+    }
+
     try {
       // Create appointment in backend
       await api.post('/appointments', {
@@ -40,24 +49,25 @@ const SimpleVideoBooking = ({ doctor, onClose }) => {
 
       // Emit event to inform doctor
       if (doctor && doctor.id) {
-        console.log('Emitting call_doctor to:', doctor.id);
+        // console.log('Emitting call_doctor to:', doctor.id);
         socket.emit('call_doctor', {
           doctorId: doctor.id,
           patientName: currentPatient.name,
           callId: callId
         });
-      } else {
-        console.error("Doctor ID is missing!");
       }
 
-      // Open the call room for the patient
-      window.open(callUrl, '_blank');
+      // Redirect the opened window to the actual call URL
+      if (newWindow) {
+        newWindow.location.href = callUrl;
+      }
 
-      // Show success message
-      alert(`Video call started! The call room has opened in a new tab. Waiting for Dr. ${doctor.name} to join.`);
+      // Close the modal
       onClose();
+
     } catch (error) {
       console.error("Failed to start instant call:", error);
+      if (newWindow) newWindow.close(); // Close the window if starting failed
       alert("Failed to start call. Please try again.");
     }
   };
