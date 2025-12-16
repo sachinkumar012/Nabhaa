@@ -33,12 +33,34 @@ io.on('connection', (socket) => {
         io.to(`doctor_${data.doctorId}`).emit('incoming_call', data);
     });
 
-    socket.on('disconnect', () => {
-        console.log('Client disconnected', socket.id);
-    });
-});
+    // WebRTC Signaling
+    socket.on('join-room', ({ roomId, userId }) => {
+        console.log(`User ${userId} joined room ${roomId}`);
+        socket.join(roomId);
+        socket.to(roomId).emit('user-connected', userId);
 
-// Start Server
-server.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+        socket.on('disconnect', () => {
+            console.log(`User ${userId} disconnected from room ${roomId}`);
+            socket.to(roomId).emit('user-disconnected', userId);
+        });
+    });
+
+    socket.on('offer', (data) => {
+        // data: { offer, roomId }
+        socket.to(data.roomId).emit('receive-offer', data.offer);
+    });
+
+    socket.on('answer', (data) => {
+        // data: { answer, roomId }
+        socket.to(data.roomId).emit('receive-answer', data.answer);
+    });
+
+    socket.on('ice-candidate', (data) => {
+        // data: { candidate, roomId }
+        socket.to(data.roomId).emit('receive-ice-candidate', data.candidate);
+    });
+
+    // Start Server
+    server.listen(PORT, () => {
+        console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    });

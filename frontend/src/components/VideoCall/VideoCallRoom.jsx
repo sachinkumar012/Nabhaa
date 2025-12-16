@@ -52,7 +52,8 @@ const VideoCallRoom = () => {
     return () => clearInterval(interval);
   }, [isCallStarted, connectionStatus]);
 
-  // Initialize user and setup call
+  const peerConnection = useRef(null);
+
   useEffect(() => {
     if (!callId) {
       navigate('/doctors');
@@ -60,228 +61,154 @@ const VideoCallRoom = () => {
     }
 
     initializeUser();
-    joinCallRoom();
+
+    // Socket Listeners
+    socket.on('user-connected', (userId) => {
+      console.log('User connected:', userId);
+      connectToNewUser(userId, localStreamRef.current);
+    });
+
+    socket.on('receive-offer', async (offer) => {
+      console.log('Received offer');
+      if (!peerConnection.current) createPeerConnection();
+
+      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await peerConnection.current.createAnswer();
+      await peerConnection.current.setLocalDescription(answer);
+
+      socket.emit('answer', { answer, roomId: callId });
+      setConnectionStatus('connected');
+      setIsCallStarted(true);
+      setWaitingMessage('');
+    });
+
+    socket.on('receive-answer', async (answer) => {
+      console.log('Received answer');
+      if (peerConnection.current) {
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+        setConnectionStatus('connected');
+        setIsCallStarted(true);
+        setWaitingMessage('');
+      }
+    });
+
+    socket.on('receive-ice-candidate', async (candidate) => {
+      console.log('Received ICE candidate');
+      if (peerConnection.current) {
+        await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    });
+
+    startCall();
 
     return () => {
       cleanup();
+      socket.off('user-connected');
+      socket.off('receive-offer');
+      socket.off('receive-answer');
+      socket.off('receive-ice-candidate');
     };
   }, [callId]);
 
-  const initializeUser = () => {
-    // Check if user is coming from doctor link or patient
-    const urlParams = new URLSearchParams(window.location.search);
-    const type = urlParams.get('type') || 'patient';
-    const name = urlParams.get('name') || (type === 'doctor' ? 'Doctor' : 'Patient');
+  const createPeerConnection = () => {
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478' }
+      ]
+    });
 
-    setUserType(type);
-    setUserName(name);
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('ice-candidate', { candidate: event.candidate, roomId: callId });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      console.log('Received remote track');
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = event.streams[0];
+      }
+    };
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        pc.addTrack(track, localStreamRef.current);
+      });
+    }
+
+    peerConnection.current = pc;
+    return pc;
   };
 
-  const joinCallRoom = async () => {
+  const startCall = async () => {
     try {
       setConnectionStatus('connecting');
-      setWaitingMessage('Connecting to call room...');
+      setWaitingMessage('Accessing camera and microphone...');
 
-      // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280, max: 1920 },
-          height: { ideal: 720, max: 1080 },
-          frameRate: { ideal: 30 }
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
+        video: true,
+        audio: true
       });
 
       localStreamRef.current = stream;
-
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
 
-      // Add current user to participants
+      // Generate a temporary user ID for this session
+      const myId = Math.random().toString(36).substr(2, 9);
       const currentUser = {
-        id: generateUserId(),
-        name: userName,
+        id: myId,
+        name: userName || (userType === 'patient' ? 'Patient' : 'Doctor'),
         type: userType,
         isLocal: true
       };
-
       setParticipants([currentUser]);
+
+      // Join the signaling room
+      console.log('Joining room:', callId);
+      socket.emit('join-room', { roomId: callId, userId: myId });
+
       setConnectionStatus('waiting');
-      setWaitingMessage(`Waiting for ${userType === 'patient' ? 'doctor' : 'patient'} to join...`);
+      setWaitingMessage(`Waiting for other participant to join...`);
 
-      // Socket.io: Notify doctor if user is patient
-      if (userType === 'patient') {
-        // Extract doctorId from URL or participants passed via state?
-        // Since we might not have doctorId in URL params as per SimulateVideoBooking, 
-        // we should ideally pass it. 
-        // BUT, looking at SimppleVideoBooking, callUrl only has type and name.
-        // To make this work, we need to pass doctorId in URL in SimpleVideoBooking.jsx.
-        // For now, let's assume doctorId is passed in query param or we parse from callId if possible.
-        // Wait, SimpleVideoBooking generates: `instant-${doctor.id}-${Date.now().toString(36)}`
-        // So we can extract doctorId from callId!
+      // If I am the patient (initiator), I might also need to notify doctor via the 'call_doctor' event again?
+      // The previous page did it, but redundancy is okay or relying on 'join-room' if the other side is already there.
+      // Since this component loads for BOTH sides, the one who joins second will find the first one?
+      // Actually, standard logic: Join Room -> Wait for 'user-connected' -> If user connected, send Offer.
 
-        const parts = callId.split('-');
-        if (parts.length >= 2 && parts[0] === 'instant') {
-          const doctorId = parts[1];
-          console.log('Emitting call_doctor for:', doctorId);
-          socket.emit('call_doctor', {
-            doctorId,
-            patientName: userName,
-            callId
-          });
-        }
-      }
-
-      // Simulate other participant joining after 3 seconds
-      // KEEPING SIMULATION for now as requested "no change in video call" logic basically means keep UI same.
-      // But for real functional call we would listen to socket events 'user_joined'. 
-      // User asked: "implement video call receive in admin panel... no change in video call"
-      // So I will keep simulation but ALSO emit the signal.
-      setTimeout(() => {
-        simulateParticipantJoin();
-      }, 3000);
+      // SPECIAL CASE: SimpleVideoBooking sends 'call_doctor'. 
+      // If Patient lands here first, they wait.
+      // Doctor clicks link, lands here. Emits 'join-room'.
+      // Patient gets 'user-connected'. Patient (since they are already there) creates Offer?
+      // Or the new joiner creates Offer? Standard is new joiner initiates? 
+      // Let's rely on 'user-connected' event.
 
     } catch (error) {
-      console.error('Failed to join call room:', error);
+      console.error("Error accessing media:", error);
       setConnectionStatus('failed');
-      setWaitingMessage('Failed to access camera/microphone. Please check permissions.');
+      setWaitingMessage('Could not access camera/microphone');
     }
   };
 
-  const simulateParticipantJoin = () => {
-    const otherUser = {
-      id: generateUserId(),
-      name: userType === 'patient' ? 'Dr. Sachin Kumar' : 'Patient',
-      type: userType === 'patient' ? 'doctor' : 'patient',
-      isLocal: false
-    };
+  const connectToNewUser = async (userId, stream) => {
+    console.log('New user connected, creating offer for', userId);
+    const pc = createPeerConnection(); // Create PC
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
 
-    setParticipants(prev => [...prev, otherUser]);
-    setConnectionStatus('connected');
-    setIsCallStarted(true);
-    setWaitingMessage('');
-
-    // Simulate receiving remote video stream
-    setTimeout(() => {
-      if (remoteVideoRef.current) {
-        // In a real implementation, this would be the remote stream
-        remoteVideoRef.current.style.backgroundColor = '#374151';
-      }
-    }, 1000);
-  };
-
-  const generateUserId = () => {
-    return Math.random().toString(36).substr(2, 9);
-  };
-
-  const handleToggleVideo = () => {
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoEnabled(videoTrack.enabled);
-      }
-    }
-  };
-
-  const handleToggleAudio = () => {
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsAudioEnabled(audioTrack.enabled);
-      }
-    }
-  };
-
-  const handleScreenShare = async () => {
-    try {
-      if (!isScreenSharing) {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true
-        });
-
-        const videoTrack = screenStream.getVideoTracks()[0];
-
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = screenStream;
-        }
-
-        videoTrack.onended = () => {
-          setIsScreenSharing(false);
-          if (localVideoRef.current && localStreamRef.current) {
-            localVideoRef.current.srcObject = localStreamRef.current;
-          }
-        };
-
-        setIsScreenSharing(true);
-      } else {
-        if (localVideoRef.current && localStreamRef.current) {
-          localVideoRef.current.srcObject = localStreamRef.current;
-        }
-        setIsScreenSharing(false);
-      }
-    } catch (error) {
-      console.error('Screen share failed:', error);
-    }
-  };
-
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      const messageData = {
-        id: Date.now(),
-        message: newMessage,
-        sender: userName,
-        senderType: userType,
-        timestamp: new Date().toISOString()
-      };
-
-      setChatMessages(prev => [...prev, messageData]);
-      setNewMessage('');
-
-      // Auto-scroll to bottom
-      setTimeout(() => {
-        if (chatRef.current) {
-          chatRef.current.scrollTop = chatRef.current.scrollHeight;
-        }
-      }, 100);
-    }
-  };
-
-  const handleEndCall = () => {
-    cleanup();
-    navigate('/doctors');
-  };
-
-  const handleCopyRoomLink = async () => {
-    try {
-      const roomUrl = window.location.href;
-      await navigator.clipboard.writeText(roomUrl);
-      alert('Room link copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-    }
+    socket.emit('offer', { offer, roomId: callId });
   };
 
   const cleanup = () => {
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        track.stop();
-      });
+      localStreamRef.current.getTracks().forEach(track => track.stop());
     }
-
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
+    if (peerConnection.current) {
+      peerConnection.current.close();
     }
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
-    }
+    socket.emit('leave-room', callId);
   };
 
   const formatTime = (seconds) => {
