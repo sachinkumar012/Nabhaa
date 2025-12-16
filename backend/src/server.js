@@ -60,7 +60,9 @@ io.on('connection', (socket) => {
         socket.to(data.roomId).emit('receive-ice-candidate', data.candidate);
     });
 
-    // Start Server
-    server.listen(PORT, () => {
-        console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    });
+});
+
+// Start Server
+server.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
