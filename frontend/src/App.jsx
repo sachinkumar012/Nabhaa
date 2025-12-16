@@ -20,6 +20,8 @@ import VideoCallRoom from './components/VideoCall/VideoCallRoom';
 import HealthBlog from './pages/HealthBlog';
 import BlogPost from './pages/BlogPost';
 import Profile from './pages/Profile';
+import DoctorLogin from './pages/Doctor/DoctorLogin';
+import DoctorDashboard from './pages/Doctor/DoctorDashboard';
 
 function App() {
   return (
@@ -55,6 +57,8 @@ function App() {
                         <Route path="/about" element={<About />} />
                         <Route path="/patient/auth" element={<PatientAuth />} />
                         <Route path="/profile" element={<Profile />} />
+                        <Route path="/doctor/login" element={<DoctorLogin />} />
+                        <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
                       </Routes>
                     </main>
                     <Footer />

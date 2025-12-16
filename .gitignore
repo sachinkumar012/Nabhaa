@@ -43,3 +43,10 @@ coverage/
 
 # Vite
 .vite/
+
+# Backend scratch files
+backend/read_otp.js
+backend/verify_otp_endpoint.js
+backend/test_*.js
+*.tmp
+*.temp

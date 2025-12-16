@@ -8,81 +8,41 @@ export default function Doctors() {
   const { t } = useLanguage();
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [showVideoBooking, setShowVideoBooking] = useState(false);
-  const [doctors] = useState([
-    {
-      id: 1,
-      name: 'Dr. Sachin Kumar',
-      specialization: 'General Medicine',
-      experience: 15,
-      rating: 4.8,
-      image: 'https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=400',
-      available: true,
-      languages: ['English', 'Hindi', 'Punjabi'],
-      phone: '+91 9318496221',
-      availableTime: '9:00 AM - 6:00 PM',
-    },
-    {
-      id: 2,
-      name: 'Dr. Tarun Thakur',
-      specialization: 'Pediatrics',
-      experience: 12,
-      rating: 4.9,
-      image: 'https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=400',
-      available: false,
-      languages: ['English', 'Hindi'],
-      phone: '+91 98765 43211',
-      availableTime: '6:00 AM - 4:00 PM',
-    },
-    {
-      id: 3,
-      name: 'Dr. Fouziya Siddiqui',
-      specialization: 'Gynecology',
-      experience: 20,
-      rating: 4.7,
-      image: 'https://images.pexels.com/photos/5407206/pexels-photo-5407206.jpeg?auto=compress&cs=tinysrgb&w=400',
-      available: true,
-      languages: ['English', 'Punjabi'],
-      phone: '+91 98765 43212',
-      availableTime: '11:00 AM - 7:00 PM',
-    },
-    {
-      id: 4,
-      name: 'Dr. Kamaljeet Kaur',
-      specialization: 'Dermatology',
-      experience: 18,
-      rating: 4.8,
-      image: 'https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=400',
-      available: true,
-      languages: ['English', 'Hindi', 'Punjabi'],
-      phone: '+91 98765 43213',
-      availableTime: '9:00 AM - 5:00 PM',
-    },
-       {
-      id: 5,
-      name: 'Dr. Manish Sharma',
-      specialization: 'Cardiology',
-      experience: 18,
-      rating: 4.8,
-      image: 'https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=400',
-      available: true,
-      languages: ['English', 'Hindi', 'Punjabi'],
-      phone: '+91 98765 43213',
-      availableTime: '2:00 AM - 3:00 AM',
-    },
-    
-       {
-      id: 6,
-      name: 'Dr. Shashank',
-      specialization: 'Orthopaedics',
-      experience: 18,
-      rating: 4.8,
-      image: 'https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=400',
-      available: true,
-      languages: ['English', 'Hindi', 'Punjabi'],
-      phone: '+91 98765 43213',
-      availableTime: '9:00 AM - 5:00 PM',
-    },
-  ]);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const response = await import('../services/api').then(module => module.default.get('/doctors'));
+        if (response.data.success) {
+          // Transform data if necessary, or just use as is. 
+          // Backend returns { _id, name, specialty, ... }
+          // Component expects id, name, ...
+          // We can map _id to id
+          const mappedDoctors = response.data.data.map(doc => ({
+            ...doc,
+            id: doc._id,
+            // Ensure image exists or use fallback
+            image: doc.image || 'https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=400',
+            available: true, // Default to true for now as backend doesn't track real-time status yet
+            availableTime: '9:00 AM - 6:00 PM', // Default
+            languages: ['English', 'Hindi'] // Default
+          }));
+          setDoctors(mappedDoctors);
+        }
+      } catch (error) {
+        console.error("Failed to fetch doctors", error);
+        // Fallback to mock if failed? Or just show error. 
+        // For User experience let's fallback to empty for now or keep mock if needed.
+        // But the goal is to test signaling, so we NEED real IDs.
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
 
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -93,6 +53,7 @@ export default function Doctors() {
 
     return () => clearInterval(timer);
   }, []);
+
 
   const handleWhatsAppCall = (phone, doctorName) => {
     const message = encodeURIComponent(`Hello Dr. ${doctorName}, I would like to schedule a consultation through Nabha Healthcare.`);
@@ -130,9 +91,11 @@ export default function Doctors() {
         </motion.div>
 
         <div className="grid grid-md-2 gap-8">
+          {loading && <div className="text-center col-span-2">Loading Doctors...</div>}
+          {!loading && doctors.length === 0 && <div className="text-center col-span-2">No doctors found.</div>}
           {doctors.map((doctor, index) => {
             const available = isCurrentlyAvailable(doctor, currentTime);
-            
+
             return (
               <motion.div
                 key={doctor.id}
@@ -147,7 +110,7 @@ export default function Doctors() {
                     alt={doctor.name}
                     className="doctor-avatar"
                   />
-                  
+
                   <div className="doctor-info" style={{ flex: 1 }}>
                     <div className="flex justify-between items-center" style={{ marginBottom: '0.5rem' }}>
                       <h3>{doctor.name}</h3>
@@ -165,9 +128,9 @@ export default function Doctors() {
                         )}
                       </div>
                     </div>
-                    
+
                     <p className="doctor-specialization">{doctor.specialization}</p>
-                    
+
                     <div className="doctor-meta">
                       <span>{doctor.experience} {t('experience')}</span>
                       <div className="flex items-center">
@@ -175,14 +138,14 @@ export default function Doctors() {
                         <span style={{ marginLeft: '0.25rem' }}>{doctor.rating}</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center text-gray-600" style={{ fontSize: '0.875rem', marginBottom: '0.75rem' }}>
                       <Clock size={16} style={{ marginRight: '0.25rem' }} />
                       <span>{doctor.availableTime}</span>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="doctor-languages">
                   {doctor.languages.map((lang, idx) => (
                     <span key={idx} className="language-tag">
@@ -190,7 +153,7 @@ export default function Doctors() {
                     </span>
                   ))}
                 </div>
-                
+
                 <div className="doctor-actions" style={{ pointerEvents: 'auto', position: 'relative', zIndex: 10 }}>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -210,7 +173,7 @@ export default function Doctors() {
                     <Video size={16} style={{ marginRight: '0.5rem' }} />
                     <span>Video Call</span>
                   </motion.button>
-                  
+
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -228,7 +191,7 @@ export default function Doctors() {
                     <MessageCircle size={16} style={{ marginRight: '0.5rem' }} />
                     <span>{t('consultNow')}</span>
                   </motion.button>
-                  
+
                   <motion.a
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}

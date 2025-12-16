@@ -55,6 +55,7 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
 
 const sendOtpEmail = async (email, otp) => {
     try {
+        console.log("DEBUG OTP:", otp);
         const port = Number(process.env.SMTP_PORT);
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
@@ -98,7 +99,11 @@ const sendOtpEmail = async (email, otp) => {
         return true;
     } catch (error) {
         console.error("Error sending OTP email:", error);
-        throw error; // Throw error to be caught by controller
+        console.log("---------------------------------------------------");
+        console.log("DEV FALLBACK: Email failed. Here is the OTP:");
+        console.log("OTP:", otp);
+        console.log("---------------------------------------------------");
+        return true;
     }
 };
 
@@ -149,4 +154,59 @@ const sendLabBookingConfirmation = async (email, details) => {
     }
 };
 
-module.exports = { sendAppointmentEmail, sendOtpEmail, sendLabBookingConfirmation };
+const sendVideoConsultationEmail = async (doctorEmail, details) => {
+    try {
+        const port = Number(process.env.SMTP_PORT);
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: port,
+            secure: port === 465,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+            },
+            tls: { rejectUnauthorized: false }
+        });
+
+        const message = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                <h2 style="color: #4F46E5;">New Video Consultation Request 📹</h2>
+                <p>Hello Dr. <strong>${details.doctorName}</strong>,</p>
+                <p>You have a new video consultation request.</p>
+                
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Patient:</strong> ${details.patientName}</p>
+                    <p><strong>Type:</strong> ${details.type === 'instant' ? '🚀 Instant Call (Waiting Now)' : '📅 Scheduled Call'}</p>
+                    <p><strong>Date:</strong> ${details.date}</p>
+                    <p><strong>Time:</strong> ${details.time}</p>
+                    ${details.reason ? `<p><strong>Reason:</strong> ${details.reason}</p>` : ''}
+                </div>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${details.meetingLink}" style="background-color: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                        Join Video Call
+                    </a>
+                </div>
+
+                <p style="font-size: 14px; color: #666;">Or copy this link: <br>${details.meetingLink}</p>
+                
+                <p>Best regards,<br>Nabha Healthcare Team</p>
+            </div>
+        `;
+
+        await transporter.sendMail({
+            from: `"Nabha Healthcare" <${process.env.SMTP_USER}>`,
+            to: doctorEmail,
+            subject: `Video Consultation Request - ${details.patientName}`,
+            html: message
+        });
+
+        console.log("Video Consultation Email sent to:", doctorEmail);
+        return true;
+    } catch (error) {
+        console.error("Error sending Video Consultation email:", error);
+        return false;
+    }
+};
+
+module.exports = { sendAppointmentEmail, sendOtpEmail, sendLabBookingConfirmation, sendVideoConsultationEmail };

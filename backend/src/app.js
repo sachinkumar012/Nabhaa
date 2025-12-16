@@ -8,8 +8,9 @@ const app = express();
 
 // Middleware
 // Middleware
+// Middleware
 app.use(cors({
-    origin: ['http://localhost:5173', process.env.CLIENT_URL].filter(Boolean),
+    origin: true,
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -37,12 +38,17 @@ const appointmentRoutes = require('./routes/appointmentRoutes');
 const medicineRoutes = require('./routes/medicineRoutes');
 const abhaRoutes = require('./routes/abhaRoutes');
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/abha', abhaRoutes);
 app.use('/api/auth', authRoutes);
+console.log('Mounting /api/admin routes');
+app.use('/api/admin', adminRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/lab-tests', require('./routes/labRoutes'));
 
 // Error Handling Middleware

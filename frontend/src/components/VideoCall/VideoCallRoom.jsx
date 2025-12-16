@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Video, 
-  VideoOff, 
-  Mic, 
-  MicOff, 
-  PhoneOff, 
-  MessageSquare, 
+import {
+  Video,
+  VideoOff,
+  Mic,
+  MicOff,
+  PhoneOff,
+  MessageSquare,
   User,
   Monitor,
   Settings,
@@ -15,11 +15,12 @@ import {
   Clock
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import socket from '../../utils/socket';
 
 const VideoCallRoom = () => {
   const { callId } = useParams();
   const navigate = useNavigate();
-  
+
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -33,7 +34,7 @@ const VideoCallRoom = () => {
   const [participants, setParticipants] = useState([]);
   const [isCallStarted, setIsCallStarted] = useState(false);
   const [waitingMessage, setWaitingMessage] = useState('');
-  
+
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const localStreamRef = useRef(null);
@@ -57,10 +58,10 @@ const VideoCallRoom = () => {
       navigate('/doctors');
       return;
     }
-    
+
     initializeUser();
     joinCallRoom();
-    
+
     return () => {
       cleanup();
     };
@@ -71,7 +72,7 @@ const VideoCallRoom = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type') || 'patient';
     const name = urlParams.get('name') || (type === 'doctor' ? 'Doctor' : 'Patient');
-    
+
     setUserType(type);
     setUserName(name);
   };
@@ -80,7 +81,7 @@ const VideoCallRoom = () => {
     try {
       setConnectionStatus('connecting');
       setWaitingMessage('Connecting to call room...');
-      
+
       // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -94,13 +95,13 @@ const VideoCallRoom = () => {
           autoGainControl: true
         }
       });
-      
+
       localStreamRef.current = stream;
-      
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
-      
+
       // Add current user to participants
       const currentUser = {
         id: generateUserId(),
@@ -108,16 +109,43 @@ const VideoCallRoom = () => {
         type: userType,
         isLocal: true
       };
-      
+
       setParticipants([currentUser]);
       setConnectionStatus('waiting');
       setWaitingMessage(`Waiting for ${userType === 'patient' ? 'doctor' : 'patient'} to join...`);
-      
+
+      // Socket.io: Notify doctor if user is patient
+      if (userType === 'patient') {
+        // Extract doctorId from URL or participants passed via state?
+        // Since we might not have doctorId in URL params as per SimulateVideoBooking, 
+        // we should ideally pass it. 
+        // BUT, looking at SimppleVideoBooking, callUrl only has type and name.
+        // To make this work, we need to pass doctorId in URL in SimpleVideoBooking.jsx.
+        // For now, let's assume doctorId is passed in query param or we parse from callId if possible.
+        // Wait, SimpleVideoBooking generates: `instant-${doctor.id}-${Date.now().toString(36)}`
+        // So we can extract doctorId from callId!
+
+        const parts = callId.split('-');
+        if (parts.length >= 2 && parts[0] === 'instant') {
+          const doctorId = parts[1];
+          console.log('Emitting call_doctor for:', doctorId);
+          socket.emit('call_doctor', {
+            doctorId,
+            patientName: userName,
+            callId
+          });
+        }
+      }
+
       // Simulate other participant joining after 3 seconds
+      // KEEPING SIMULATION for now as requested "no change in video call" logic basically means keep UI same.
+      // But for real functional call we would listen to socket events 'user_joined'. 
+      // User asked: "implement video call receive in admin panel... no change in video call"
+      // So I will keep simulation but ALSO emit the signal.
       setTimeout(() => {
         simulateParticipantJoin();
       }, 3000);
-      
+
     } catch (error) {
       console.error('Failed to join call room:', error);
       setConnectionStatus('failed');
@@ -132,12 +160,12 @@ const VideoCallRoom = () => {
       type: userType === 'patient' ? 'doctor' : 'patient',
       isLocal: false
     };
-    
+
     setParticipants(prev => [...prev, otherUser]);
     setConnectionStatus('connected');
     setIsCallStarted(true);
     setWaitingMessage('');
-    
+
     // Simulate receiving remote video stream
     setTimeout(() => {
       if (remoteVideoRef.current) {
@@ -178,20 +206,20 @@ const VideoCallRoom = () => {
           video: true,
           audio: true
         });
-        
+
         const videoTrack = screenStream.getVideoTracks()[0];
-        
+
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = screenStream;
         }
-        
+
         videoTrack.onended = () => {
           setIsScreenSharing(false);
           if (localVideoRef.current && localStreamRef.current) {
             localVideoRef.current.srcObject = localStreamRef.current;
           }
         };
-        
+
         setIsScreenSharing(true);
       } else {
         if (localVideoRef.current && localStreamRef.current) {
@@ -213,10 +241,10 @@ const VideoCallRoom = () => {
         senderType: userType,
         timestamp: new Date().toISOString()
       };
-      
+
       setChatMessages(prev => [...prev, messageData]);
       setNewMessage('');
-      
+
       // Auto-scroll to bottom
       setTimeout(() => {
         if (chatRef.current) {
@@ -247,7 +275,7 @@ const VideoCallRoom = () => {
         track.stop();
       });
     }
-    
+
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
     }
@@ -284,12 +312,12 @@ const VideoCallRoom = () => {
               <p style={styles.roomId}>Room: {callId}</p>
             </div>
           </div>
-          
+
           <div style={styles.participantsList}>
             <Users size={16} />
             <span>{participants.length} participant{participants.length !== 1 ? 's' : ''}</span>
           </div>
-          
+
           <div style={styles.callStatus}>
             <div style={{
               ...styles.statusIndicator,
@@ -312,7 +340,7 @@ const VideoCallRoom = () => {
             playsInline
             style={styles.remoteVideo}
           />
-          
+
           {!isCallStarted && (
             <div style={styles.waitingScreen}>
               <div style={styles.waitingContent}>
@@ -321,7 +349,7 @@ const VideoCallRoom = () => {
                 <p style={styles.waitingSubtext}>
                   Share the room link with the other participant to start the consultation
                 </p>
-                <button 
+                <button
                   onClick={handleCopyRoomLink}
                   style={styles.copyLinkButton}
                 >
@@ -331,7 +359,7 @@ const VideoCallRoom = () => {
               </div>
             </div>
           )}
-          
+
           {isCallStarted && !remoteStreamRef.current && (
             <div style={styles.noVideoPlaceholder}>
               <User size={64} />
@@ -365,18 +393,18 @@ const VideoCallRoom = () => {
             <div style={styles.chatHeader}>
               <MessageSquare size={20} />
               <span>Chat</span>
-              <button 
+              <button
                 onClick={() => setShowChat(false)}
                 style={styles.closeChatButton}
               >
                 ×
               </button>
             </div>
-            
+
             <div ref={chatRef} style={styles.chatMessages}>
               {chatMessages.map((msg) => (
-                <div 
-                  key={msg.id} 
+                <div
+                  key={msg.id}
                   style={{
                     ...styles.chatMessage,
                     alignSelf: msg.senderType === userType ? 'flex-end' : 'flex-start'
@@ -392,7 +420,7 @@ const VideoCallRoom = () => {
                 </div>
               ))}
             </div>
-            
+
             <div style={styles.chatInput}>
               <input
                 type="text"
