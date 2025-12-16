@@ -201,6 +201,122 @@ const VideoCallRoom = () => {
     socket.emit('offer', { offer, roomId: callId });
   };
 
+  const handleToggleVideo = () => {
+    if (localStreamRef.current) {
+      const videoTrack = localStreamRef.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoEnabled(videoTrack.enabled);
+      }
+    }
+  };
+
+  const handleToggleAudio = () => {
+    if (localStreamRef.current) {
+      const audioTrack = localStreamRef.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsAudioEnabled(audioTrack.enabled);
+      }
+    }
+  };
+
+  const handleScreenShare = async () => {
+    try {
+      if (!isScreenSharing) {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true
+        });
+
+        const videoTrack = screenStream.getVideoTracks()[0];
+
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = screenStream;
+        }
+
+        // Replace track in peer connection for WebRTC
+        if (peerConnection.current) {
+          const senders = peerConnection.current.getSenders();
+          const sender = senders.find(s => s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack);
+          }
+        }
+
+        videoTrack.onended = () => {
+          setIsScreenSharing(false);
+          const cameraTrack = localStreamRef.current.getVideoTracks()[0];
+          if (localVideoRef.current && localStreamRef.current) {
+            localVideoRef.current.srcObject = localStreamRef.current;
+          }
+          if (peerConnection.current) {
+            const senders = peerConnection.current.getSenders();
+            const sender = senders.find(s => s.track.kind === 'video');
+            if (sender) {
+              sender.replaceTrack(cameraTrack);
+            }
+          }
+        };
+
+        setIsScreenSharing(true);
+      } else {
+        // Stop screen share
+        const cameraTrack = localStreamRef.current.getVideoTracks()[0];
+        if (localVideoRef.current && localStreamRef.current) {
+          localVideoRef.current.srcObject = localStreamRef.current;
+        }
+        if (peerConnection.current) {
+          const senders = peerConnection.current.getSenders();
+          const sender = senders.find(s => s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(cameraTrack);
+          }
+        }
+        setIsScreenSharing(false);
+      }
+    } catch (error) {
+      console.error('Screen share failed:', error);
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (newMessage.trim()) {
+      const messageData = {
+        id: Date.now(),
+        message: newMessage,
+        sender: userName,
+        senderType: userType,
+        timestamp: new Date().toISOString()
+      };
+
+      setChatMessages(prev => [...prev, messageData]);
+      setNewMessage('');
+
+      // Auto-scroll to bottom
+      setTimeout(() => {
+        if (chatRef.current) {
+          chatRef.current.scrollTop = chatRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  };
+
+  const handleEndCall = () => {
+    cleanup();
+    navigate('/doctors');
+  };
+
+  const handleCopyRoomLink = async () => {
+    try {
+      const roomUrl = window.location.href;
+      await navigator.clipboard.writeText(roomUrl);
+      alert('Room link copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
+
   const cleanup = () => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
