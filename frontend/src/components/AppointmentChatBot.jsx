@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, Send, Volume2, VolumeX, Calendar, X, MessageCircle, CheckCircle } from "lucide-react";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY; // Gemini API Key
+const GEMINI_MODEL = "gemini-2.5-flash"; // Confirmed available model
 
 // SMS API Configuration
 const SMS_CONFIG = {
@@ -325,13 +326,13 @@ const AppointmentChatBot = () => {
       INSTRUCTIONS:
       1. Analyze the user's intent.
       2. **IF the user wants to book an appointment (e.g., "book appointment", "I need a doctor", "schedule visit"):**
-         - DO NOT ask for details step-by-step.
-         - Output the action "SHOW_BOOKING_FORM".
-         - Respond with a polite message like "Sure, please fill out this form to book your appointment."
+          - DO NOT ask for details step-by-step.
+          - Output the action "SHOW_BOOKING_FORM".
+          - Respond with a polite message like "Sure, please fill out this form to book your appointment."
       3. **IF the user asks about doctors or availability:**
-         - Answer based on the provided context.
+          - Answer based on the provided context.
       4. **IF the user asks general health questions:**
-         - Provide a brief, helpful answer.
+          - Provide a brief, helpful answer.
       5. Be polite and professional.
       
       OUTPUT FORMAT (JSON ONLY):
@@ -343,8 +344,13 @@ const AppointmentChatBot = () => {
     `;
 
     try {
+      if (!API_KEY) {
+        throw new Error("Gemini API Key is missing. Please check your .env file.");
+      }
+
+      console.log(`Calling Gemini API with model: ${GEMINI_MODEL}`);
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -352,13 +358,33 @@ const AppointmentChatBot = () => {
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Gemini API Error Response:", errorData);
+
+        if (response.status === 403 || response.status === 404) {
+          return {
+            response: `Error: The model '${GEMINI_MODEL}' API call failed with status ${response.status}. This usually means your API Key does not have access to this specific model. Please check Google Cloud Console.`,
+            action: "NONE"
+          };
+        }
+
+        throw new Error(`API request failed with status ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
+      }
+
       const data = await response.json();
+
+      if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content) {
+        console.error("Unexpected Gemini API response structure:", data);
+        throw new Error("Invalid response format from Gemini API");
+      }
+
       const text = data.candidates[0].content.parts[0].text;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       return jsonMatch ? JSON.parse(jsonMatch[0]) : { response: text, action: "NONE" };
     } catch (error) {
       console.error("Gemini API Error:", error);
-      return { response: "I'm having trouble connecting. Please try again.", action: "NONE" };
+      return { response: `Error: ${error.message || "I'm having trouble connecting. Please try again."}`, action: "NONE" };
     }
   };
 

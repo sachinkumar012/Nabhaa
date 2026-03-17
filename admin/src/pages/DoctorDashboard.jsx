@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import socket from '../socket';
 import { toast } from 'react-toastify';
 
 const DoctorDashboard = () => {
+    const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [appointments, setAppointments] = useState([]);
 
@@ -178,17 +180,15 @@ const DoctorDashboard = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <a
-                                                    href={apt.meetingLink.startsWith('http') ? apt.meetingLink : `http://localhost:5173${apt.meetingLink}`} // Ensure absolute link to frontend
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                <button
+                                                    onClick={() => navigate(`/video-call/${apt.videoCallId}`)}
                                                     className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all transform hover:scale-105"
                                                 >
                                                     <svg className="mr-2 -ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.818v6.364a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                                     </svg>
                                                     Join Call
-                                                </a>
+                                                </button>
                                             </td>
                                         </tr>
                                     ))

@@ -36,7 +36,7 @@ export default function Header() {
     { name: 'Hospitals', href: '/hospitals', key: 'hospitals' },
     { name: 'Health Records', href: '/records', key: 'records' },
     { name: t('pharmacy'), href: '/pharmacy', key: 'pharmacy' },
-    { name: t('symptoms'), href: '/symptoms', key: 'symptoms' },
+    { name: t('symptomsNav'), href: '/symptoms', key: 'symptoms' },
     { name: 'Health Blog', href: '/blog', key: 'blog' },
     { name: t('about'), href: '/about', key: 'about' },
   ];

@@ -2,40 +2,41 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Clock, Phone, MessageCircle, CheckCircle, XCircle, Video } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import AuthSidebar from '../components/Auth/AuthSidebar';
 import SimpleVideoBooking from '../components/VideoCall/SimpleVideoBooking';
+import api from '../services/api';
+
 
 export default function Doctors() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [showVideoBooking, setShowVideoBooking] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await import('../services/api').then(module => module.default.get('/doctors'));
+        console.log('Fetching doctors...');
+        const response = await api.get('/doctors');
+        console.log('Doctors response:', response.data);
         if (response.data.success) {
-          // Transform data if necessary, or just use as is. 
-          // Backend returns { _id, name, specialty, ... }
-          // Component expects id, name, ...
-          // We can map _id to id
+          // Transform data if necessary
           const mappedDoctors = response.data.data.map(doc => ({
             ...doc,
             id: doc._id,
-            // Ensure image exists or use fallback
             image: doc.image || 'https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=400',
-            available: true, // Default to true for now as backend doesn't track real-time status yet
-            availableTime: '9:00 AM - 6:00 PM', // Default
-            languages: ['English', 'Hindi'] // Default
+            available: true,
+            availableTime: '9:00 AM - 6:00 PM',
+            languages: ['English', 'Hindi']
           }));
           setDoctors(mappedDoctors);
         }
       } catch (error) {
         console.error("Failed to fetch doctors", error);
-        // Fallback to mock if failed? Or just show error. 
-        // For User experience let's fallback to empty for now or keep mock if needed.
-        // But the goal is to test signaling, so we NEED real IDs.
       } finally {
         setLoading(false);
       }
@@ -54,13 +55,16 @@ export default function Doctors() {
     return () => clearInterval(timer);
   }, []);
 
-
   const handleWhatsAppCall = (phone, doctorName) => {
     const message = encodeURIComponent(`Hello Dr. ${doctorName}, I would like to schedule a consultation through Nabha Healthcare.`);
     window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${message}`, '_blank');
   };
 
   const handleVideoConsultation = (doctor) => {
+    if (!user) {
+      setIsAuthOpen(true);
+      return;
+    }
     setSelectedDoctor(doctor);
     setShowVideoBooking(true);
   };
@@ -215,6 +219,12 @@ export default function Doctors() {
           onClose={closeVideoBooking}
         />
       )}
+
+      {/* Auth Sidebar for Login Prompt */}
+      <AuthSidebar
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+      />
     </div>
   );
 }

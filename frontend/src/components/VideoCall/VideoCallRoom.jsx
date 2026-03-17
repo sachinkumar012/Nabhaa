@@ -17,29 +17,40 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import socket from '../../utils/socket';
 
+import { useAuth } from '../../context/AuthContext';
+
 const VideoCallRoom = () => {
   const { callId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth(); // Get authenticated user
 
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [localStream, setLocalStream] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [callDuration, setCallDuration] = useState(0);
-  const [connectionStatus, setConnectionStatus] = useState('connecting');
-  const [userType, setUserType] = useState(''); // 'patient' or 'doctor'
-  const [userName, setUserName] = useState('');
-  const [participants, setParticipants] = useState([]);
-  const [isCallStarted, setIsCallStarted] = useState(false);
-  const [waitingMessage, setWaitingMessage] = useState('');
 
+  // Connection States
+  const [connectionStatus, setConnectionStatus] = useState('initializing'); // initializing, connecting, connected, disconnected, failed
+  const [waitingMessage, setWaitingMessage] = useState('Initializing secure connection...');
+  const [isCallStarted, setIsCallStarted] = useState(false);
+
+  // User Info
+  const [userName, setUserName] = useState('');
+  const [userType, setUserType] = useState(''); // 'doctor' or 'patient'
+
+  // Refs
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const localStreamRef = useRef(null);
-  const remoteStreamRef = useRef(null);
   const chatRef = useRef(null);
+
+  // Keep-alive interval ref
+  const keepAliveRef = useRef(null);
 
   // Timer for call duration
   useEffect(() => {
@@ -52,7 +63,9 @@ const VideoCallRoom = () => {
     return () => clearInterval(interval);
   }, [isCallStarted, connectionStatus]);
 
+  // WebRTC connection references
   const peerConnection = useRef(null);
+  const iceCandidatesQueue = useRef([]);
 
   useEffect(() => {
     if (!callId) {
@@ -60,43 +73,102 @@ const VideoCallRoom = () => {
       return;
     }
 
-    initializeUser();
+    // AUTH CHECK START
+    const urlParams = new URLSearchParams(window.location.search);
+    const type = urlParams.get('type') || 'patient';
+
+    if (type === 'patient') {
+      if (!user) {
+        alert("Please login to join the video consultation.");
+        navigate('/');
+        return; // STOP EXECUTION
+      }
+      setUserName(user.name || 'Patient');
+    } else {
+      const name = urlParams.get('name') || 'Doctor';
+      setUserName(name);
+    }
+    setUserType(type);
+    // AUTH CHECK END
 
     // Socket Listeners
     socket.on('user-connected', (userId) => {
       console.log('User connected:', userId);
+      // Update UI
+      setParticipants(prev => {
+        if (!prev.find(p => p.id === userId)) {
+          return [...prev, { id: userId, name: 'Participant', type: 'remote', isLocal: false }];
+        }
+        return prev;
+      });
+      // Initiate Call
       connectToNewUser(userId, localStreamRef.current);
+    });
+
+    socket.on('user-disconnected', (userId) => {
+      console.log('User disconnected:', userId);
+      if (peerConnection.current) {
+        peerConnection.current.close();
+        peerConnection.current = null;
+      }
+      setParticipants(prev => prev.filter(p => p.id !== userId));
+      setConnectionStatus('waiting');
+      setIsCallStarted(false);
+      setWaitingMessage('Participant disconnected. Waiting...');
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
     });
 
     socket.on('receive-offer', async (offer) => {
       console.log('socket: receive-offer', offer);
       if (!peerConnection.current) createPeerConnection();
 
-      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await peerConnection.current.createAnswer();
-      await peerConnection.current.setLocalDescription(answer);
+      try {
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
 
-      console.log('sending answer');
-      socket.emit('answer', { answer, roomId: callId });
-      setConnectionStatus('connected');
-      setIsCallStarted(true);
-      setWaitingMessage('');
+        // Process queued ICE candidates
+        while (iceCandidatesQueue.current.length > 0) {
+          const candidate = iceCandidatesQueue.current.shift();
+          await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+
+        const answer = await peerConnection.current.createAnswer();
+        await peerConnection.current.setLocalDescription(answer);
+
+        console.log('sending answer');
+        socket.emit('answer', { answer, roomId: callId });
+        setConnectionStatus('connected');
+        setIsCallStarted(true);
+        setWaitingMessage('');
+      } catch (err) {
+        console.error("Error creating answer:", err);
+      }
     });
 
     socket.on('receive-answer', async (answer) => {
       console.log('socket: receive-answer', answer);
       if (peerConnection.current) {
-        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-        setConnectionStatus('connected');
-        setIsCallStarted(true);
-        setWaitingMessage('');
+        try {
+          await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+          setConnectionStatus('connected');
+          setIsCallStarted(true);
+          setWaitingMessage('');
+        } catch (err) {
+          console.error("Error setting remote description:", err);
+        }
       }
     });
 
     socket.on('receive-ice-candidate', async (candidate) => {
       console.log('socket: receive-ice-candidate');
       if (peerConnection.current) {
-        await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+        if (peerConnection.current.remoteDescription) {
+          await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } else {
+          console.log('Buffering ICE candidate');
+          iceCandidatesQueue.current.push(candidate);
+        }
       }
     });
 
@@ -105,18 +177,22 @@ const VideoCallRoom = () => {
     return () => {
       cleanup();
       socket.off('user-connected');
+      socket.off('user-disconnected');
       socket.off('receive-offer');
       socket.off('receive-answer');
       socket.off('receive-ice-candidate');
+      // Notify server cleanup
+      socket.emit('leave-room', callId);
     };
   }, [callId]);
 
   const createPeerConnection = () => {
     console.log('Creating RTCPeerConnection');
+    // Use Google STUN servers
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:global.stun.twilio.com:3478' }
+        { urls: 'stun:stun1.l.google.com:19302' },
       ]
     });
 
@@ -147,13 +223,23 @@ const VideoCallRoom = () => {
 
 
   const initializeUser = () => {
-    // Check if user is coming from doctor link or patient
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type') || 'patient';
-    const name = urlParams.get('name') || (type === 'doctor' ? 'Doctor' : 'Patient');
+
+    if (type === 'patient') {
+      if (!user) {
+        // Enforce login for patients
+        alert("Please login to join the video consultation.");
+        navigate('/');
+        return;
+      }
+      setUserName(user.name || 'Patient');
+    } else {
+      const name = urlParams.get('name') || (type === 'doctor' ? 'Doctor' : 'Patient');
+      setUserName(name);
+    }
 
     setUserType(type);
-    setUserName(name);
   };
 
   const startCall = async () => {
@@ -186,7 +272,7 @@ const VideoCallRoom = () => {
       socket.emit('join-room', { roomId: callId, userId: myId });
 
       setConnectionStatus('waiting');
-      setWaitingMessage(`Waiting for other participant to join...`);
+      setWaitingMessage(`Waiting for ${userType === 'patient' ? 'doctor' : 'patient'} to join...`);
 
       // If I am the patient (initiator), I might also need to notify doctor via the 'call_doctor' event again?
       // The previous page did it, but redundancy is okay or relying on 'join-room' if the other side is already there.
@@ -253,9 +339,9 @@ const VideoCallRoom = () => {
         // Replace track in peer connection for WebRTC
         if (peerConnection.current) {
           const senders = peerConnection.current.getSenders();
-          const sender = senders.find(s => s.track.kind === 'video');
+          const sender = senders.find(s => s.track && s.track.kind === 'video');
           if (sender) {
-            sender.replaceTrack(videoTrack);
+            await sender.replaceTrack(videoTrack);
           }
         }
 
@@ -267,7 +353,7 @@ const VideoCallRoom = () => {
           }
           if (peerConnection.current) {
             const senders = peerConnection.current.getSenders();
-            const sender = senders.find(s => s.track.kind === 'video');
+            const sender = senders.find(s => s.track && s.track.kind === 'video');
             if (sender) {
               sender.replaceTrack(cameraTrack);
             }
@@ -283,7 +369,7 @@ const VideoCallRoom = () => {
         }
         if (peerConnection.current) {
           const senders = peerConnection.current.getSenders();
-          const sender = senders.find(s => s.track.kind === 'video');
+          const sender = senders.find(s => s.track && s.track.kind === 'video');
           if (sender) {
             sender.replaceTrack(cameraTrack);
           }
@@ -418,7 +504,7 @@ const VideoCallRoom = () => {
             </div>
           )}
 
-          {isCallStarted && !remoteStreamRef.current && (
+          {isCallStarted && !(remoteVideoRef.current && remoteVideoRef.current.srcObject) && (
             <div style={styles.noVideoPlaceholder}>
               <User size={64} />
               <p>Waiting for {userType === 'patient' ? 'doctor' : 'patient'} video...</p>
@@ -643,12 +729,16 @@ const styles = {
     flex: 1,
     position: 'relative',
     display: 'flex',
+    minHeight: 0,
+    overflow: 'hidden',
   },
 
   remoteVideoContainer: {
     flex: 1,
     position: 'relative',
     backgroundColor: '#111827',
+    minHeight: 0,
+    overflow: 'hidden',
   },
 
   remoteVideo: {

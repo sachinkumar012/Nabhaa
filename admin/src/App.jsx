@@ -7,9 +7,11 @@ import Dashboard from './pages/Dashboard';
 import Orders from './pages/Orders';
 import Doctors from './pages/Doctors';
 import Users from './pages/Users';
+import Appointments from './pages/Appointments';
 import Sidebar from './components/Sidebar';
 
 import DoctorDashboard from './pages/DoctorDashboard';
+import VideoCallRoom from './components/VideoCallRoom';
 
 // Protected Route Component for Admin
 const ProtectedRoute = ({ children }) => {
@@ -97,6 +99,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/appointments"
+          element={
+            <ProtectedRoute>
+              <Appointments />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Doctor Routes */}
         <Route
@@ -105,6 +115,14 @@ function App() {
             <DoctorProtectedRoute>
               <DoctorDashboard />
             </DoctorProtectedRoute>
+          }
+        />
+
+        {/* Helper route for Video Call */}
+        <Route
+          path="/video-call/:callId"
+          element={
+            <VideoCallRoom />
           }
         />
 

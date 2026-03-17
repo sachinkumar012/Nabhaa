@@ -62,6 +62,9 @@ exports.bookAppointment = async (req, res) => {
         });
 
         // 4. Send Email to Doctor
+        const adminUrl = process.env.VITE_ADMIN_URL || 'http://localhost:5174';
+        const doctorMeetingLink = `${adminUrl}/video-call/${callId}`;
+
         if (assignedDoctor && doctorEmail) {
             await sendVideoConsultationEmail(doctorEmail, {
                 doctorName: assignedDoctor.name,
@@ -70,7 +73,7 @@ exports.bookAppointment = async (req, res) => {
                 time,
                 reason,
                 type: type || 'scheduled',
-                meetingLink
+                meetingLink: doctorMeetingLink
             });
         }
 
@@ -143,6 +146,20 @@ exports.updateAppointmentStatus = async (req, res) => {
         });
     } catch (error) {
         console.error("Error updating appointment status:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+exports.getAllAppointments = async (req, res) => {
+    try {
+        const appointments = await Appointment.find().populate('doctor', 'name email').sort({ createdAt: -1 });
+        res.status(200).json({
+            success: true,
+            count: appointments.length,
+            data: appointments
+        });
+    } catch (error) {
+        console.error("Error fetching all appointments:", error);
         res.status(500).json({ success: false, message: "Server Error" });
     }
 };

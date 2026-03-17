@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { bookAppointment, getAppointmentsForDoctor, updateAppointmentStatus } = require('../controllers/appointmentController');
+const { bookAppointment, getAppointmentsForDoctor, updateAppointmentStatus, getAllAppointments } = require('../controllers/appointmentController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.post('/', bookAppointment);
+router.get('/all', getAllAppointments);
 router.get('/doctor/list', protect, getAppointmentsForDoctor);
 router.patch('/:id/status', updateAppointmentStatus);
 

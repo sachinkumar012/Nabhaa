@@ -33,16 +33,29 @@ io.on('connection', (socket) => {
         io.to(`doctor_${data.doctorId}`).emit('incoming_call', data);
     });
 
+    // Track users for disconnect handling
+    const users = {};
+
     // WebRTC Signaling
     socket.on('join-room', ({ roomId, userId }) => {
         console.log(`User ${userId} joined room ${roomId}`);
+
+        // Store user info
+        users[socket.id] = { roomId, userId };
+
         socket.join(roomId);
         socket.to(roomId).emit('user-connected', userId);
+    });
 
-        socket.on('disconnect', () => {
-            console.log(`User ${userId} disconnected from room ${roomId}`);
-            socket.to(roomId).emit('user-disconnected', userId);
-        });
+    // Handle disconnect cleanly
+    socket.on('disconnect', () => {
+        const user = users[socket.id];
+        if (user) {
+            console.log(`User ${user.userId} disconnected from room ${user.roomId}`);
+            socket.to(user.roomId).emit('user-disconnected', user.userId);
+            delete users[socket.id];
+        }
+        console.log('Client disconnected', socket.id);
     });
 
     socket.on('offer', (data) => {

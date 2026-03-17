@@ -2,51 +2,66 @@ import { useState } from 'react';
 import { X, Pill, Tablet, Stethoscope, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 export default function AuthSidebar({ isOpen, onClose }) {
     const { login } = useAuth();
-    const [step, setStep] = useState('phone'); // 'phone' | 'otp'
-    const [phoneNumber, setPhoneNumber] = useState('');
+    const [step, setStep] = useState('email'); // 'email' | 'otp'
+    const [email, setEmail] = useState('');
     const [otp, setOtp] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSendOtp = () => {
-        if (phoneNumber.length < 10) {
-            alert('Please enter a valid 10-digit mobile number');
+    const handleSendOtp = async () => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            toast.error('Please enter a valid email address');
             return;
         }
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/send-otp`, { email });
+            if (response.data.success) {
+                toast.success(response.data.message);
+                setStep('otp');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to send OTP. Please try again later.');
+        } finally {
             setIsLoading(false);
-            setStep('otp');
-            // In a real app, you would trigger the SMS here
-        }, 1500);
+        }
     };
 
-    const handleVerifyOtp = () => {
+    const handleVerifyOtp = async () => {
         if (otp.length < 4) {
-            alert('Please enter the valid OTP');
+            toast.error('Please enter a valid OTP');
             return;
         }
         setIsLoading(true);
-        // Simulate API verification
-        setTimeout(() => {
+
+        try {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/verify-otp`, { email, otp });
+
+            if (response.data.success) {
+                toast.success('Login Successful!');
+                login(response.data.user); // Log the user in with backend user data
+                onClose();
+                // Reset state after closing
+                setTimeout(() => {
+                    setStep('email');
+                    setEmail('');
+                    setOtp('');
+                }, 500);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Invalid or Expired OTP');
+        } finally {
             setIsLoading(false);
-            login({ name: 'User', phone: phoneNumber }); // Log the user in
-            // alert('Login Successful!'); // Removed alert as we are logging in
-            onClose();
-            // Reset state after closing
-            setTimeout(() => {
-                setStep('phone');
-                setPhoneNumber('');
-                setOtp('');
-            }, 500);
-        }, 1500);
+        }
     };
 
     const handleBack = () => {
-        setStep('phone');
+        setStep('email');
         setOtp('');
     };
 
@@ -92,10 +107,10 @@ export default function AuthSidebar({ isOpen, onClose }) {
                             <div className="relative z-10 flex justify-between items-end">
                                 <div className="mb-2">
                                     <h2 className="text-3xl font-bold text-white mb-2">
-                                        {step === 'phone' ? 'Login' : 'Verify OTP'}
+                                        {step === 'email' ? 'Login' : 'Verify OTP'}
                                     </h2>
                                     <p className="text-blue-100 text-lg">
-                                        {step === 'phone' ? 'or Sign up to continue' : `Sent to +91 ${phoneNumber}`}
+                                        {step === 'email' ? 'or Sign up to continue' : `Sent to ${email}`}
                                     </p>
                                 </div>
 
@@ -113,21 +128,18 @@ export default function AuthSidebar({ isOpen, onClose }) {
 
                         {/* Content */}
                         <div className="p-8 flex-1 flex flex-col">
-                            {step === 'phone' ? (
+                            {step === 'email' ? (
                                 <div className="mb-8">
                                     <label className="block text-sm font-semibold text-gray-700 mb-4">
-                                        Enter your mobile number
+                                        Enter your email address
                                     </label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium border-r border-gray-300 pr-3">
-                                            +91
-                                        </span>
                                         <input
-                                            type="tel"
-                                            value={phoneNumber}
-                                            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                            className="w-full pl-16 pr-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1A73E8] focus:border-[#1A73E8] transition-all text-lg font-medium tracking-wide"
-                                            placeholder="Mobile Number"
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1A73E8] focus:border-[#1A73E8] transition-all text-lg font-medium tracking-wide"
+                                            placeholder="Email Address"
                                             autoFocus
                                         />
                                     </div>
@@ -143,14 +155,14 @@ export default function AuthSidebar({ isOpen, onClose }) {
                                             value={otp}
                                             onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                             className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1A73E8] focus:border-[#1A73E8] transition-all text-lg font-medium tracking-widest text-center"
-                                            placeholder="Enter 4-digit OTP"
+                                            placeholder="Enter 6-digit OTP"
                                             maxLength={6}
                                             autoFocus
                                         />
                                     </div>
                                     <div className="mt-4 flex justify-between items-center text-sm">
                                         <button onClick={handleBack} className="text-gray-500 hover:text-gray-700 font-medium">
-                                            Change Number
+                                            Change Email
                                         </button>
                                         <button className="text-[#1A73E8] font-bold hover:underline">
                                             Resend OTP
@@ -160,7 +172,7 @@ export default function AuthSidebar({ isOpen, onClose }) {
                             )}
 
                             <button
-                                onClick={step === 'phone' ? handleSendOtp : handleVerifyOtp}
+                                onClick={step === 'email' ? handleSendOtp : handleVerifyOtp}
                                 disabled={isLoading}
                                 className={`w-full bg-[#1A73E8] hover:bg-[#1557b0] text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
@@ -168,7 +180,7 @@ export default function AuthSidebar({ isOpen, onClose }) {
                                     <span>Processing...</span>
                                 ) : (
                                     <>
-                                        <span>{step === 'phone' ? 'Send OTP' : 'Verify & Login'}</span>
+                                        <span>{step === 'email' ? 'Send OTP' : 'Verify & Login'}</span>
                                         <ChevronRight size={20} />
                                     </>
                                 )}

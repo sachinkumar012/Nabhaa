@@ -99,11 +99,7 @@ const sendOtpEmail = async (email, otp) => {
         return true;
     } catch (error) {
         console.error("Error sending OTP email:", error);
-        console.log("---------------------------------------------------");
-        console.log("DEV FALLBACK: Email failed. Here is the OTP:");
-        console.log("OTP:", otp);
-        console.log("---------------------------------------------------");
-        return true;
+        return false;
     }
 };
 

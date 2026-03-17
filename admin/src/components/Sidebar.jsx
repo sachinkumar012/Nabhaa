@@ -36,6 +36,9 @@ const Sidebar = () => {
                 <Link to="/users" className={`block px-4 py-3 rounded-xl transition-all duration-200 font-medium ${isActive('/users')}`}>
                     Users
                 </Link>
+                <Link to="/appointments" className={`block px-4 py-3 rounded-xl transition-all duration-200 font-medium ${isActive('/appointments')}`}>
+                    Appointments
+                </Link>
             </nav>
             <div className="p-4 border-t border-gray-800">
                 <button
