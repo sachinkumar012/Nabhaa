@@ -2067,3 +2067,711 @@ a:focus {
     height: 75vh !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRESCRIPTION ANALYSIS PAGE — Premium OCR UI
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Animations ────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes rx-slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes rx-pulse-border {
+  0%, 100% { border-color: #10b981; }
+  50%       { border-color: #6ee7b7; }
+}
+@keyframes rx-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.spin { animation: spin 0.9s linear infinite; }
+
+/* ── Page layout ───────────────────────────────────────────────────────── */
+.rx-page {
+  min-height: 100vh;
+  background: linear-gradient(145deg, #f0fdf4 0%, #ecfdf5 40%, #f0f9ff 100%);
+  padding: 6rem 1rem 4rem;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+.rx-container {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.rx-header {
+  text-align: center;
+  animation: rx-slide-up 0.5s ease-out;
+}
+.rx-header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: white;
+  box-shadow: 0 8px 24px rgba(16,185,129,0.35);
+  margin-bottom: 1.25rem;
+}
+.rx-title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #064e3b, #059669);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.6rem;
+}
+.rx-subtitle {
+  color: #4b5563;
+  font-size: 1rem;
+  max-width: 580px;
+  margin: 0 auto 1.25rem;
+  line-height: 1.65;
+}
+.rx-engine-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.rx-engine-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: white;
+  border: 1px solid #d1fae5;
+  color: #065f46;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  letter-spacing: 0.02em;
+}
+
+/* ── Upload Card ───────────────────────────────────────────────────────── */
+.rx-upload-card {
+  background: white;
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  border: 1px solid #e5e7eb;
+  animation: rx-slide-up 0.55s ease-out;
+}
+
+/* ── Drop Zone ─────────────────────────────────────────────────────────── */
+.rx-dropzone {
+  border: 2px dashed #d1fae5;
+  border-radius: 16px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: #fafffe;
+  position: relative;
+}
+.rx-dropzone:hover, .rx-dropzone.dragging {
+  border-color: #10b981;
+  background: #f0fdf4;
+  animation: rx-pulse-border 1.5s ease infinite;
+}
+.rx-dropzone.has-preview { cursor: default; padding: 1.25rem; }
+.rx-file-input { display: none; }
+
+.rx-upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+.rx-upload-icon-wrap {
+  width: 72px; height: 72px; border-radius: 18px;
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  display: flex; align-items: center; justify-content: center;
+  color: #059669; margin-bottom: 0.5rem;
+}
+.rx-upload-title { font-size: 1.05rem; font-weight: 700; color: #111827; }
+.rx-upload-hint { font-size: 0.82rem; color: #9ca3af; }
+.rx-upload-features {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 0.75rem; margin-top: 0.5rem;
+}
+.rx-upload-features span {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.75rem; color: #6b7280; font-weight: 500;
+}
+
+/* ── Preview ───────────────────────────────────────────────────────────── */
+.rx-preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.875rem; }
+.rx-preview-img {
+  max-height: 280px; max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+  object-fit: contain;
+}
+.rx-preview-footer {
+  display: flex; align-items: center; gap: 0.6rem;
+  color: #059669; font-weight: 600; font-size: 0.9rem;
+}
+.rx-check-icon { color: #10b981; }
+.rx-change-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: #f3f4f6; border: none; cursor: pointer;
+  color: #6b7280; font-size: 0.78rem; font-weight: 600;
+  padding: 0.35rem 0.8rem; border-radius: 8px;
+  transition: all 0.2s;
+}
+.rx-change-btn:hover { background: #e5e7eb; color: #374151; }
+
+/* ── Action Buttons ────────────────────────────────────────────────────── */
+.rx-analyze-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.6rem; width: 100%; margin-top: 1.25rem;
+  padding: 0.95rem 2rem;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: white; font-size: 1rem; font-weight: 700;
+  border: none; border-radius: 14px; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(16,185,129,0.35);
+  transition: all 0.25s ease;
+}
+.rx-analyze-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(16,185,129,0.45); }
+.rx-analyze-btn:active { transform: translateY(0); }
+
+.rx-reset-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.5rem; width: 100%; margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #f9fafb; border: 1.5px solid #e5e7eb;
+  color: #6b7280; font-size: 0.9rem; font-weight: 600;
+  border-radius: 12px; cursor: pointer;
+  transition: all 0.2s;
+}
+.rx-reset-btn:hover { background: #f3f4f6; border-color: #d1d5db; color: #374151; }
+
+/* ── Error Banner ──────────────────────────────────────────────────────── */
+.rx-error-banner {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  margin-top: 1rem; padding: 1rem 1.25rem;
+  background: #fef2f2; border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444; border-radius: 12px;
+  color: #991b1b;
+}
+.rx-error-msg { font-weight: 600; font-size: 0.9rem; margin: 0 0 0.2rem; }
+.rx-error-hint { font-size: 0.8rem; color: #b91c1c; margin: 0; }
+
+/* ── Progress Card ─────────────────────────────────────────────────────── */
+.rx-progress-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+  animation: rx-slide-up 0.4s ease-out;
+}
+.rx-progress-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-weight: 700; color: #059669; margin-bottom: 1.25rem; font-size: 0.95rem;
+}
+.rx-progress-steps {
+  display: flex; flex-direction: column; gap: 0.65rem;
+}
+.rx-progress-step {
+  display: flex; align-items: center; gap: 0.75rem;
+  font-size: 0.875rem; color: #9ca3af; font-weight: 500;
+  transition: all 0.3s ease;
+}
+.rx-progress-step.active { color: #059669; font-weight: 700; }
+.rx-progress-step.done { color: #6b7280; }
+.rx-progress-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700;
+  background: #f3f4f6; color: #9ca3af;
+  flex-shrink: 0; transition: all 0.3s ease;
+}
+.rx-progress-step.active .rx-progress-dot {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: white; box-shadow: 0 3px 10px rgba(16,185,129,0.3);
+}
+.rx-progress-step.done .rx-progress-dot {
+  background: #d1fae5; color: #059669;
+}
+
+/* ── Results Section ───────────────────────────────────────────────────── */
+.rx-results-section {
+  display: flex; flex-direction: column; gap: 1rem;
+  animation: rx-slide-up 0.5s ease-out;
+}
+
+/* ── Summary Bar ───────────────────────────────────────────────────────── */
+.rx-summary-bar {
+  background: white; border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.07);
+  border: 1px solid #e5e7eb;
+}
+.rx-summary-left { display: flex; align-items: center; gap: 0.75rem; }
+.rx-summary-check { color: #10b981; flex-shrink: 0; }
+.rx-summary-title { font-size: 1.1rem; font-weight: 800; color: #111827; margin: 0 0 0.15rem; }
+.rx-summary-meta { font-size: 0.8rem; color: #6b7280; margin: 0; }
+
+.rx-confidence-gauge { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+.rx-gauge-label { font-size: 0.75rem; font-weight: 600; color: #9ca3af; }
+.rx-gauge-bar {
+  width: 100px; height: 8px; background: #f3f4f6;
+  border-radius: 999px; overflow: hidden;
+}
+.rx-gauge-fill {
+  height: 100%; border-radius: 999px;
+  transition: width 0.8s ease;
+}
+.rx-gauge-fill.high { background: linear-gradient(90deg, #10b981, #059669); }
+.rx-gauge-fill.mid  { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.rx-gauge-fill.low  { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.rx-gauge-pct { font-size: 0.85rem; font-weight: 700; color: #374151; width: 36px; }
+
+/* ── Confirmation Warning ──────────────────────────────────────────────── */
+.rx-confirm-warning {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding: 0.875rem 1.25rem;
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  border-radius: 12px; color: #92400e; font-size: 0.875rem; font-weight: 600;
+}
+
+/* ── Medicine Cards ────────────────────────────────────────────────────── */
+.rx-med-card {
+  background: white; border-radius: 18px;
+  padding: 1.5rem; border: 1.5px solid #e5e7eb;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.06);
+  transition: all 0.25s ease;
+  animation: rx-slide-up 0.45s ease-out;
+}
+.rx-med-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.1); transform: translateY(-2px); }
+
+/* ORIGINAL card */
+.rx-card-original { border-color: #a7f3d0; }
+.rx-card-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 1.25rem; flex-wrap: wrap;
+}
+.rx-card-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+.rx-form-badge {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  padding: 0.2rem 0.65rem; border-radius: 999px;
+  background: #d1fae5; color: #065f46; letter-spacing: 0.04em;
+}
+.rx-med-name { font-size: 1.25rem; font-weight: 800; color: #059669; margin: 0 0 0.35rem; }
+.rx-med-meta { font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem; }
+.rx-pack-size { font-size: 0.78rem; color: #9ca3af; margin: 0; }
+.rx-dosage-pill {
+  display: inline-block;
+  background: #eff6ff; color: #1d4ed8;
+  font-size: 0.75rem; font-weight: 700;
+  padding: 0.15rem 0.5rem; border-radius: 6px;
+}
+.rx-freq-pill {
+  display: inline-block;
+  background: #f3e8ff; color: #7e22ce;
+  font-size: 0.75rem; font-weight: 700;
+  padding: 0.15rem 0.5rem; border-radius: 6px;
+}
+.rx-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; flex-shrink: 0; }
+.rx-price { font-size: 1.5rem; font-weight: 800; color: #111827; }
+
+/* SUBSTITUTE card */
+.rx-card-substitute { border-color: #fde68a; }
+.rx-out-of-stock-banner {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  background: #fffbeb; padding: 0.75rem 1rem;
+  border-radius: 10px; color: #92400e;
+  font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem;
+}
+.rx-substitutes-header {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; padding: 0.6rem 0;
+  border-top: 1px solid #f3f4f6; user-select: none;
+}
+.rx-substitutes-label {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.875rem; font-weight: 700; color: #059669;
+}
+.rx-chevron { color: #9ca3af; transition: transform 0.2s; }
+.rx-chevron.rotated { transform: rotate(90deg); }
+.rx-substitutes-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem; margin-top: 1rem;
+}
+.rx-sub-card {
+  background: #f9fafb; border: 1.5px solid #e5e7eb;
+  border-radius: 14px; padding: 1rem;
+  transition: all 0.2s;
+}
+.rx-sub-card:hover { border-color: #10b981; background: #f0fdf4; transform: translateY(-2px); }
+.rx-sub-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem; }
+.rx-sub-name { font-weight: 700; color: #111827; font-size: 0.95rem; }
+.rx-match-badge {
+  font-size: 0.68rem; font-weight: 700;
+  background: #d1fae5; color: #065f46;
+  padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap;
+}
+.rx-sub-comp { font-size: 0.78rem; color: #6b7280; }
+.rx-sub-mfr { font-size: 0.72rem; color: #9ca3af; margin-top: 0.2rem; }
+.rx-sub-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.875rem; flex-wrap: wrap; }
+.rx-sub-price { font-size: 1.05rem; font-weight: 800; color: #111827; }
+.rx-distance { display: flex; align-items: center; gap: 0.2rem; font-size: 0.75rem; color: #6b7280; }
+
+/* UNSAFE card */
+.rx-card-unsafe {
+  display: flex; align-items: flex-start; gap: 1rem;
+  border-color: #fecaca; background: #fef2f2; flex-wrap: wrap;
+}
+.rx-unsafe-icon { color: #ef4444; flex-shrink: 0; padding-top: 0.1rem; }
+.rx-unsafe-name { font-size: 1.1rem; font-weight: 800; color: #991b1b; margin: 0 0 0.3rem; }
+.rx-unsafe-alert { font-size: 0.875rem; color: #b91c1c; margin: 0 0 0.5rem; }
+
+/* UNVERIFIED card */
+.rx-card-unverified { border-color: #e0e7ff; background: #fafbff; }
+.rx-unverified-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;
+}
+.rx-ocr-raw-label { font-size: 0.75rem; color: #9ca3af; font-weight: 600; margin-right: 0.3rem; }
+.rx-ocr-raw-name { font-size: 0.95rem; font-weight: 700; color: #374151; }
+.rx-unverified-prompt { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.75rem; }
+.rx-confirmed-pill {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: #d1fae5; color: #065f46;
+  padding: 0.6rem 1rem; border-radius: 10px;
+  font-size: 0.875rem; font-weight: 600; flex-wrap: wrap;
+}
+.rx-add-confirmed-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: #059669; color: white; border: none; cursor: pointer;
+  font-size: 0.78rem; font-weight: 700; padding: 0.3rem 0.75rem;
+  border-radius: 8px; transition: all 0.2s; margin-left: 0.25rem;
+}
+.rx-add-confirmed-btn:hover { background: #047857; }
+
+/* ── Confidence Badges ─────────────────────────────────────────────────── */
+.rx-confidence-badge {
+  display: inline-block; font-size: 0.7rem; font-weight: 700;
+  padding: 0.2rem 0.65rem; border-radius: 999px; letter-spacing: 0.03em;
+}
+.badge-confidence-high { background: #d1fae5; color: #065f46; }
+.badge-confidence-mid  { background: #fef3c7; color: #92400e; }
+.badge-confidence-low  { background: #fee2e2; color: #991b1b; }
+
+/* ── Buttons inside cards ──────────────────────────────────────────────── */
+.rx-btn-primary {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: white; border: none; cursor: pointer;
+  font-size: 0.875rem; font-weight: 700;
+  padding: 0.7rem 1.25rem; border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.3);
+  transition: all 0.2s; white-space: nowrap;
+}
+.rx-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
+
+.rx-btn-outline {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  border: 1.5px solid #10b981; color: #059669;
+  background: white; cursor: pointer;
+  font-size: 0.78rem; font-weight: 700;
+  padding: 0.45rem 0.9rem; border-radius: 9px;
+  transition: all 0.2s;
+}
+.rx-btn-outline:hover { background: #059669; color: white; }
+
+.rx-btn-danger {
+  display: inline-flex; align-items: center;
+  background: #ef4444; color: white; border: none; cursor: pointer;
+  font-size: 0.85rem; font-weight: 700; padding: 0.65rem 1.2rem;
+  border-radius: 10px; transition: all 0.2s; white-space: nowrap;
+}
+.rx-btn-danger:hover { background: #dc2626; }
+
+/* ── Manual Search ─────────────────────────────────────────────────────── */
+.rx-manual-search { position: relative; width: 100%; }
+.rx-manual-input-wrap {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: white; border: 1.5px solid #d1d5db;
+  border-radius: 12px; padding: 0.65rem 1rem;
+  transition: all 0.2s;
+}
+.rx-manual-input-wrap:focus-within { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
+.rx-manual-icon { color: #9ca3af; flex-shrink: 0; }
+.rx-manual-input {
+  border: none; outline: none; background: transparent;
+  font-size: 0.9rem; color: #111827; flex: 1; padding: 0;
+}
+.rx-manual-spinner { color: #10b981; flex-shrink: 0; }
+
+.rx-suggestions-list {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: white; border: 1.5px solid #e5e7eb;
+  border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  overflow: hidden; z-index: 50; list-style: none; padding: 0.4rem 0; margin: 0;
+}
+.rx-suggestion-item {
+  padding: 0.75rem 1rem; cursor: pointer; transition: background 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+.rx-suggestion-item:last-child { border-bottom: none; }
+.rx-suggestion-item:hover { background: #f0fdf4; }
+.rx-suggestion-name { font-weight: 700; font-size: 0.9rem; color: #111827; }
+.rx-suggestion-meta { font-size: 0.75rem; color: #9ca3af; margin-top: 0.15rem; }
+
+/* ── No Medicines Card ─────────────────────────────────────────────────── */
+.rx-no-meds-card {
+  background: white; border-radius: 18px; padding: 2.5rem;
+  text-align: center;
+  border: 1.5px dashed #d1d5db;
+}
+.rx-no-meds-icon { color: #9ca3af; margin: 0 auto 1rem; display: block; }
+.rx-no-meds-card h3 { font-size: 1.1rem; font-weight: 700; color: #374151; margin-bottom: 0.4rem; }
+.rx-no-meds-card p { color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem; }
+
+/* ── Cart ──────────────────────────────────────────────────────────────── */
+.rx-cart-toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  display: flex; align-items: center; gap: 0.6rem;
+  background: #111827; color: white;
+  padding: 0.75rem 1.25rem; border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+  font-size: 0.875rem; font-weight: 600; z-index: 999;
+  animation: rx-slide-up 0.3s ease-out;
+}
+.rx-cart-toast-btn {
+  background: #10b981; color: white; border: none; cursor: pointer;
+  font-size: 0.78rem; font-weight: 700; padding: 0.3rem 0.75rem;
+  border-radius: 8px; transition: background 0.2s;
+}
+.rx-cart-toast-btn:hover { background: #059669; }
+
+.rx-cart-summary {
+  background: white; border-radius: 18px;
+  border: 1.5px solid #e5e7eb;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+.rx-cart-summary-header {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border-bottom: 1px solid #d1fae5;
+}
+.rx-cart-summary-header h3 { font-size: 1rem; font-weight: 700; color: #065f46; margin: 0; }
+.rx-cart-items { padding: 0.75rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.rx-cart-item {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;
+}
+.rx-cart-item:last-child { border: none; }
+.rx-cart-item-name { flex: 1; font-weight: 600; font-size: 0.9rem; color: #374151; }
+.rx-cart-item-price { font-weight: 700; color: #111827; font-size: 0.9rem; }
+.rx-cart-remove {
+  background: #fee2e2; color: #ef4444; border: none; cursor: pointer;
+  width: 24px; height: 24px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.rx-cart-remove:hover { background: #ef4444; color: white; }
+.rx-cart-total {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: #f9fafb; border-top: 1px solid #e5e7eb;
+  font-weight: 800; font-size: 1rem; color: #111827;
+}
+.rx-checkout-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: white; border: none; cursor: pointer;
+  font-size: 0.875rem; font-weight: 700;
+  padding: 0.65rem 1.5rem; border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.3); transition: all 0.2s;
+}
+.rx-checkout-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .rx-page { padding: 5rem 0.75rem 3rem; }
+  .rx-summary-bar { flex-direction: column; align-items: flex-start; }
+  .rx-confidence-gauge { width: 100%; }
+  .rx-gauge-bar { flex: 1; }
+  .rx-card-header { flex-direction: column; }
+  .rx-card-right { align-items: flex-start; }
+  .rx-substitutes-grid { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYER 7 — FALLBACK ENGINE UI STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Summary Bar warn state ────────────────────────────────────────────── */
+.rx-summary-warn { color: #f59e0b; flex-shrink: 0; }
+
+/* ── Fallback Warning Banner ───────────────────────────────────────────── */
+.rx-fallback-warning-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  padding: 1.1rem 1.5rem;
+  background: linear-gradient(135deg, #fffbeb, #fef9c3);
+  border: 1.5px solid #fde68a;
+  border-left: 5px solid #f59e0b;
+  border-radius: 14px;
+  animation: rx-slide-up 0.4s ease-out;
+}
+.rx-fallback-banner-left {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  color: #78350f; flex: 1;
+}
+.rx-fallback-banner-left > svg { color: #f59e0b; flex-shrink: 0; margin-top: 0.1rem; }
+.rx-fallback-banner-left strong { display: block; font-size: 0.95rem; font-weight: 800; margin-bottom: 0.25rem; }
+.rx-fallback-banner-left p { font-size: 0.85rem; color: #92400e; margin: 0; line-height: 1.5; }
+.rx-fallback-banner-badge {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  background: #f59e0b; color: white;
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 0.3rem 0.85rem; border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.35);
+}
+
+/* ── Fallback Section ───────────────────────────────────────────────────── */
+.rx-fallback-section { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.rx-fallback-card {
+  background: white; border-radius: 18px;
+  border: 1.5px solid #fde68a;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(245,158,11,0.08);
+  animation: rx-slide-up 0.45s ease-out;
+}
+.rx-fallback-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+.rx-fallback-title-row { display: flex; align-items: flex-start; gap: 0.75rem; flex: 1; }
+.rx-fallback-icon { color: #d97706; flex-shrink: 0; margin-top: 0.1rem; }
+.rx-fallback-label { font-size: 0.95rem; color: #374151; margin-bottom: 0.3rem; }
+.rx-fallback-tag {
+  display: inline-flex; white-space: nowrap;
+  background: #fef3c7; color: #92400e;
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 0.25rem 0.7rem; border-radius: 999px; border: 1px solid #fde68a;
+}
+.rx-fallback-message { font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem; line-height: 1.55; }
+
+/* ── Salt Badge ─────────────────────────────────────────────────────────── */
+.rx-salt-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: #eff6ff; color: #1d4ed8;
+  font-size: 0.73rem; font-weight: 700;
+  padding: 0.25rem 0.65rem; border-radius: 8px;
+  border: 1px solid #bfdbfe; margin-top: 0.35rem;
+}
+.rx-salt-badge-inline { margin-bottom: 0.75rem; }
+
+/* ── Dosage Warning ────────────────────────────────────────────────────── */
+.rx-dosage-warning {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: #fff7ed; border: 1px solid #fed7aa;
+  border-radius: 10px; padding: 0.6rem 1rem;
+  font-size: 0.8rem; color: #c2410c; font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* ── Fallback Substitutes Grid ──────────────────────────────────────────── */
+.rx-fallback-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.875rem;
+  margin-top: 0.5rem;
+}
+.rx-fallback-sub-card {
+  background: #f9fafb; border: 1.5px solid #e5e7eb;
+  border-radius: 14px; padding: 1rem;
+  transition: all 0.2s;
+}
+.rx-fallback-sub-card:hover { border-color: #f59e0b; background: #fffbeb; transform: translateY(-2px); box-shadow: 0 4px 14px rgba(245,158,11,0.1); }
+.rx-fallback-sub-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.4rem; margin-bottom: 0.35rem; }
+.rx-fallback-sub-name { font-weight: 700; color: #111827; font-size: 0.95rem; line-height: 1.3; }
+.rx-fallback-sub-comp { font-size: 0.76rem; color: #6b7280; margin-bottom: 0.2rem; }
+.rx-fallback-sub-pack { font-size: 0.72rem; color: #9ca3af; }
+.rx-fallback-sub-mfr { font-size: 0.72rem; color: #9ca3af; margin-top: 0.15rem; }
+.rx-fallback-sub-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.5rem; margin-top: 0.875rem; flex-wrap: wrap;
+}
+.rx-fallback-sub-price { font-size: 1.05rem; font-weight: 800; color: #111827; }
+
+/* ── Same Salt Badge ────────────────────────────────────────────────────── */
+.rx-same-salt-badge {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  background: #dbeafe; color: #1d4ed8;
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase;
+  padding: 0.2rem 0.5rem; border-radius: 6px; white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Stock Indicator ────────────────────────────────────────────────────── */
+.rx-stock-dot { display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #6b7280; }
+.rx-stock-indicator {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+}
+.rx-stock-indicator.in-stock { background: #10b981; box-shadow: 0 0 4px rgba(16,185,129,0.5); }
+.rx-stock-indicator.out-stock { background: #ef4444; }
+
+/* ── Small button variant ───────────────────────────────────────────────── */
+.rx-btn-sm { padding: 0.4rem 0.8rem !important; font-size: 0.78rem !important; border-radius: 9px !important; }
+.rx-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+/* ── Fallback manual search section ─────────────────────────────────────── */
+.rx-fallback-manual {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  padding: 1rem; background: #f9fafb;
+  border: 1.5px dashed #d1d5db; border-radius: 12px;
+  margin-top: 0.5rem;
+}
+.rx-fallback-manual p { font-size: 0.85rem; color: #6b7280; margin: 0; }
+.rx-fallback-search-icon { color: #9ca3af; }
+
+/* ── Manual fallback footer (always visible) ────────────────────────────── */
+.rx-manual-fallback-footer {
+  display: flex; align-items: flex-start; gap: 1rem;
+  background: white; border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  border: 1.5px solid #e5e7eb;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.06);
+}
+.rx-manual-fallback-footer > svg { color: #9ca3af; flex-shrink: 0; margin-top: 0.2rem; }
+.rx-manual-fallback-hint { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.75rem; font-weight: 600; }
+
+/* ── Error state manual search ──────────────────────────────────────────── */
+.rx-error-manual-search {
+  background: white; border-radius: 18px;
+  padding: 1.75rem; border: 1.5px dashed #d1d5db;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.05);
+  animation: rx-slide-up 0.4s ease-out;
+}
+.rx-error-manual-search h3 {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1.05rem; font-weight: 700; color: #374151; margin-bottom: 0.4rem;
+}
+.rx-error-manual-search p { font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem; }
+
+/* ── Responsive for fallback grid ───────────────────────────────────────── */
+@media (max-width: 640px) {
+  .rx-fallback-grid { grid-template-columns: 1fr; }
+  .rx-fallback-warning-banner { flex-direction: column; }
+  .rx-fallback-banner-badge { align-self: flex-start; }
+}

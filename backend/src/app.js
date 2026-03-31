@@ -40,6 +40,7 @@ const abhaRoutes = require('./routes/abhaRoutes');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const prescriptionRoutes = require('./routes/prescriptionRoutes');
 
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
@@ -50,6 +51,7 @@ console.log('Mounting /api/admin routes');
 app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/lab-tests', require('./routes/labRoutes'));
+app.use('/api/prescriptions', prescriptionRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

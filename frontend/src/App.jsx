@@ -22,6 +22,7 @@ import BlogPost from './pages/BlogPost';
 import Profile from './pages/Profile';
 import DoctorLogin from './pages/Doctor/DoctorLogin';
 import DoctorDashboard from './pages/Doctor/DoctorDashboard';
+import PrescriptionAnalysis from './pages/PrescriptionAnalysis';
 
 function App() {
   return (
@@ -50,8 +51,8 @@ function App() {
                         <Route path="/abha" element={<AbhaManagement />} />
                         <Route path="/mobile-view" element={<MobileAbhaCard />} />
                         <Route path="/lab-tests" element={<LabTests />} />
-                        {/* Pharmacy route moved to outer Routes to remove custom Header */}
                         <Route path="/symptoms" element={<SymptomChecker />} />
+                        <Route path="/prescription-analysis" element={<PrescriptionAnalysis />} />
                         <Route path="/blog" element={<HealthBlog />} />
                         <Route path="/blog/:id" element={<BlogPost />} />
                         <Route path="/about" element={<About />} />
