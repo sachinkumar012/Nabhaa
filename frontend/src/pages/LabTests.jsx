@@ -195,6 +195,15 @@ const ViewAllPage = ({ tests, title, onBack, onView, onBook }) => {
 
   return (
     <div style={{ background: '#f9fafb', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+      <style>{`
+        .view-all-container { display: flex; gap: 1.25rem; align-items: flex-start; }
+        .view-all-sidebar { width: 220px; flex-shrink: 0; background: white; border-radius: 14px; padding: 1.25rem; box-shadow: 0 1px 6px rgba(0,0,0,0.06); position: sticky; top: 80px; }
+        @media (max-width: 800px) {
+          .view-all-container { flex-direction: column; align-items: stretch; }
+          .view-all-sidebar { width: 100%; position: static; box-sizing: border-box; }
+        }
+      `}</style>
+      
       {/* Top bar */}
       <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: TEAL, fontWeight: 600, fontSize: '0.875rem' }}>
@@ -207,10 +216,10 @@ const ViewAllPage = ({ tests, title, onBack, onView, onBook }) => {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '1.25rem 1rem', display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
+      <div className="view-all-container" style={{ maxWidth: 1100, margin: '0 auto', padding: '1.25rem 1rem' }}>
 
         {/* ── Left Filters sidebar ── */}
-        <aside style={{ width: 220, flexShrink: 0, background: 'white', borderRadius: 14, padding: '1.25rem', boxShadow: '0 1px 6px rgba(0,0,0,0.06)', position: 'sticky', top: 80 }}>
+        <aside className="view-all-sidebar">
           <h3 style={{ fontWeight: 800, fontSize: '0.95rem', color: '#111827', marginBottom: '1rem' }}>Filters</h3>
 
           {/* Type of Tests */}

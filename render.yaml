@@ -1,0 +1,33 @@
+services:
+  # ── Backend (Node.js API) ────────────────────────────────────────────────
+  - type: web
+    name: nabha-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install --production=false
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # Add the following in Render Dashboard → Environment:
+      # MONGODB_URI, JWT_SECRET, GEMINI_API_KEY, SMTP_USER, SMTP_PASS,
+      # RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, CORS_ORIGIN
+    healthCheckPath: /
+
+  # ── Frontend (Static Site) ───────────────────────────────────────────────
+  - type: web
+    name: nabha-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        # Replace with your actual Render backend URL after first deploy
+        value: https://nabha-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

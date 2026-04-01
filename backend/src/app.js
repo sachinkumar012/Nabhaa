@@ -6,13 +6,36 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-// Middleware
-// Middleware
-// Middleware
+// CORS — allow localhost dev + production Render/Vercel/Netlify URLs
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:4173',
+    ...(process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+        : []),
+];
+
 app.use(cors({
-    origin: true,
-    credentials: true
+    origin: (origin, callback) => {
+        // Allow requests with no origin (Postman, server-to-server, curl)
+        if (!origin) return callback(null, true);
+        // Allow if origin is in allowlist OR is a render/vercel/netlify domain
+        if (
+            allowedOrigins.includes(origin) ||
+            /\.onrender\.com$/.test(origin) ||
+            /\.vercel\.app$/.test(origin) ||
+            /\.netlify\.app$/.test(origin)
+        ) {
+            return callback(null, true);
+        }
+        callback(new Error(`CORS blocked: ${origin}`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(helmet());
