@@ -2,6 +2,14 @@ const Otp = require('../models/otpModel');
 const Customer = require('../models/customerModel');
 const { sendOtpEmail } = require('../utils/emailService');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+
+// Generate JWT
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', {
+        expiresIn: '7d', // 7 days
+    });
+};
 
 // Generate 6-digit OTP
 const generateOtp = () => {
@@ -95,7 +103,7 @@ const verifyOtp = async (req, res) => {
             success: true,
             message: 'OTP Verified Successfully',
             user,
-            // token: generateToken(user.id) // If we had JWT setup for customers
+            token: generateToken(user._id)
         });
 
     } catch (error) {
@@ -145,8 +153,27 @@ const updateProfile = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Get Current Customer Profile
+ * @route   GET /api/auth/profile
+ * @access  Private
+ */
+const getProfile = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        res.status(200).json({ success: true, user });
+    } catch (error) {
+        console.error('Get Profile Error:', error);
+        res.status(500).json({ success: false, message: 'Server Error getting profile' });
+    }
+};
+
 module.exports = {
     sendOtp,
     verifyOtp,
-    updateProfile
+    updateProfile,
+    getProfile
 };

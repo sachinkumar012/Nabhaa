@@ -9,7 +9,7 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
             secure: port === 465,
             auth: {
                 user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+                pass: process.env.SMTP_PASS
             },
             connectionTimeout: 10000, // 10 seconds
             logger: true,
@@ -63,7 +63,7 @@ const sendOtpEmail = async (email, otp) => {
             secure: port === 465,
             auth: {
                 user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+                pass: process.env.SMTP_PASS
             },
             connectionTimeout: 10000,
             logger: true,
@@ -112,7 +112,7 @@ const sendLabBookingConfirmation = async (email, details) => {
             secure: port === 465,
             auth: {
                 user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+                pass: process.env.SMTP_PASS
             },
             tls: { rejectUnauthorized: false }
         });
@@ -159,7 +159,7 @@ const sendVideoConsultationEmail = async (doctorEmail, details) => {
             secure: port === 465,
             auth: {
                 user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+                pass: process.env.SMTP_PASS
             },
             tls: { rejectUnauthorized: false }
         });
@@ -214,7 +214,7 @@ const sendCallbackRequest = async (phone) => {
             secure: port === 465,
             auth: {
                 user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+                pass: process.env.SMTP_PASS
             },
             tls: { rejectUnauthorized: false }
         });

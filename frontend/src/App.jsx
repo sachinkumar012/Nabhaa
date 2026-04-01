@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from './context/LanguageContext';
 import { HealthProvider } from './context/HealthContext';
 import { LocationProvider } from './modules/location/presentation/LocationContext';
+import { AuthProvider } from './context/AuthContext';
+import AuthSidebar from './components/Auth/AuthSidebar';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
 import Home from './pages/Home';
@@ -23,14 +25,17 @@ import Profile from './pages/Profile';
 import DoctorLogin from './pages/Doctor/DoctorLogin';
 import DoctorDashboard from './pages/Doctor/DoctorDashboard';
 import PrescriptionAnalysis from './pages/PrescriptionAnalysis';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 function App() {
   return (
     <LanguageProvider>
       <HealthProvider>
         <LocationProvider>
-          <Router>
+          <AuthProvider>
+            <Router>
             <div className="min-h-screen flex flex-col">
+              <AuthSidebar />
               <Routes>
                 <Route path="/video-call/:callId" element={<VideoCallRoom />} />
                 <Route path="/pharmacy" element={
@@ -47,7 +52,7 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/doctors" element={<Doctors />} />
                         <Route path="/hospitals" element={<Hospitals />} />
-                        <Route path="/records" element={<HealthRecords />} />
+                        <Route path="/records" element={<ProtectedRoute><HealthRecords /></ProtectedRoute>} />
                         <Route path="/abha" element={<AbhaManagement />} />
                         <Route path="/mobile-view" element={<MobileAbhaCard />} />
                         <Route path="/lab-tests" element={<LabTests />} />
@@ -57,7 +62,7 @@ function App() {
                         <Route path="/blog/:id" element={<BlogPost />} />
                         <Route path="/about" element={<About />} />
                         <Route path="/patient/auth" element={<PatientAuth />} />
-                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                         <Route path="/doctor/login" element={<DoctorLogin />} />
                         <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
                       </Routes>
@@ -67,7 +72,8 @@ function App() {
                 } />
               </Routes>
             </div>
-          </Router>
+            </Router>
+          </AuthProvider>
         </LocationProvider>
       </HealthProvider>
     </LanguageProvider>

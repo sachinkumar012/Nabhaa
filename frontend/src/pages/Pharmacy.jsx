@@ -3,6 +3,7 @@ import { Search, Plus, Edit3, User, Lock, Mail, Phone, Clock, MapPin, Package, S
 import HealthIcon from '../components/UI/HealthIcon';
 import PaymentService from '../services/PaymentService';
 import { useLocationContext } from '../modules/location/presentation/LocationContext';
+import { useAuth } from '../context/AuthContext';
 import LabTests from './LabTests';
 
 const Pharmacy = () => {
@@ -177,11 +178,11 @@ const Pharmacy = () => {
   ]);
 
   const [currentUser, setCurrentUser] = useState(null);
-  const [currentCustomer, setCurrentCustomer] = useState(null);
+  const { user: currentCustomer, setAuthModalOpen: setShowCustomerAuth, logout } = useAuth();
+  const setCurrentCustomer = () => {}; // Stub legacy state setter
   const [currentView, setCurrentView] = useState('user-search');
   const [searchQuery, setSearchQuery] = useState('');
   const [showLogin, setShowLogin] = useState(false);
-  const [showCustomerAuth, setShowCustomerAuth] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showAddMedicine, setShowAddMedicine] = useState(false);
   const [editingMedicine, setEditingMedicine] = useState(null);
@@ -3207,81 +3208,90 @@ const Pharmacy = () => {
 
             {currentView === 'health-records' && (
               <div className="health-records-container" style={{ maxWidth: '800px', margin: '4rem auto', padding: '2rem', fontFamily: 'sans-serif', textAlign: 'center' }}>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#115E59', marginBottom: '2rem' }}>
-                  Sign In To Access Your Health Records
-                </h1>
+                {currentCustomer ? (
+                  <div style={{ padding: '3rem', background: '#F9FAFB', borderRadius: '12px', border: '1px dashed #D1D5DB' }}>
+                    <Activity size={48} color="#9CA3AF" style={{ margin: '0 auto 1rem' }} />
+                    <h2 style={{ fontSize: '1.8rem', color: '#111827', marginBottom: '1rem', fontWeight: 'bold' }}>No Health Records Found</h2>
+                    <p style={{ color: '#4B5563', fontSize: '1.1rem', maxWidth: '500px', margin: '0 auto' }}>
+                      You currently do not have any saved health records or synced clinical data. Check back after your next consultation or lab test.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#115E59', marginBottom: '2rem' }}>
+                      Sign In To Access Your Health Records
+                    </h1>
 
-                <div style={{ display: 'grid', gap: '2rem', marginBottom: '3rem', textAlign: 'left' }}>
+                    <div style={{ display: 'grid', gap: '2rem', marginBottom: '3rem', textAlign: 'left' }}>
 
-                  {/* Feature 1 */}
-                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-                    <div style={{ background: '#E0F2FE', padding: '1rem', borderRadius: '50%', color: '#0369A1' }}>
-                      <Package size={32} />
+                      {/* Feature 1 */}
+                      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                        <div style={{ background: '#E0F2FE', padding: '1rem', borderRadius: '50%', color: '#0369A1' }}>
+                          <Package size={32} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>Receive & Organize your Health information</h3>
+                          <p style={{ color: '#4b5563', lineHeight: '1.6' }}>
+                            Nabha Personal Health Records will sync all your Health Records in real time from the entire Nabha ecosystem ie Nabha Hospitals, Nabha Diagnostics, Nabha 24|7, Nabha Clinics etc. You can use it to view and share your records anytime.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Feature 2 */}
+                      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                        <div style={{ background: '#DCFCE7', padding: '1rem', borderRadius: '50%', color: '#15803D' }}>
+                          <Activity size={32} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>Track & Monitor</h3>
+                          <p style={{ color: '#4b5563', lineHeight: '1.6' }}>
+                            Nabha 24|7 Personal Health Records digitizes all your health records and helps in tracking your health parameters through health graphs based on your historical values. It helps in understanding your organ's health by analysing abnormal values from your lab reports.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Feature 3 */}
+                      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                        <div style={{ background: '#FEF3C7', padding: '1rem', borderRadius: '50%', color: '#B45309' }}>
+                          <ShieldCheck size={32} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>Safe & Secure</h3>
+                          <p style={{ color: '#4b5563', lineHeight: '1.6' }}>
+                            Nabha 24|7 Personal Health Record stores all your data in a secure environment and gives you complete control over who can access your Health Records.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>Receive & Organize your Health information</h3>
-                      <p style={{ color: '#4b5563', lineHeight: '1.6' }}>
-                        Nabha Personal Health Records will sync all your Health Records in real time from the entire Nabha ecosystem ie Nabha Hospitals, Nabha Diagnostics, Nabha 24|7, Nabha Clinics etc. You can use it to view and share your records anytime.
+
+                    <button
+                      onClick={() => {
+                        setShowCustomerAuth(true); // Triggers global AuthContext modal
+                      }}
+                      style={{
+                        backgroundColor: '#115E59',
+                        color: 'white',
+                        padding: '1rem 3rem',
+                        fontSize: '1.1rem',
+                        fontWeight: 'bold',
+                        borderRadius: '8px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 6px rgba(17, 94, 89, 0.2)',
+                        marginBottom: '2rem'
+                      }}
+                    >
+                      Login Now
+                    </button>
+
+                    <div style={{ background: '#F3F4F6', padding: '1.5rem', borderRadius: '12px' }}>
+                      <h4 style={{ fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>Not able to Login?</h4>
+                      <p style={{ color: '#4b5563', fontSize: '0.9rem' }}>
+                        If you are an international patient or having trouble logging in, you can reach out to our customer support team by emailing your concern to us at <a href="mailto:helpdesk@Nabha247.com" style={{ color: '#115E59', fontWeight: 'bold' }}>helpdesk@Nabha247.com</a>
                       </p>
                     </div>
-                  </div>
-
-                  {/* Feature 2 */}
-                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-                    <div style={{ background: '#DCFCE7', padding: '1rem', borderRadius: '50%', color: '#15803D' }}>
-                      <Activity size={32} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>Track & Monitor</h3>
-                      <p style={{ color: '#4b5563', lineHeight: '1.6' }}>
-                        Nabha 24|7 Personal Health Records digitizes all your health records and helps in tracking your health parameters through health graphs based on your historical values. It helps in understanding your organ's health by analysing abnormal values from your lab reports.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Feature 3 */}
-                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-                    <div style={{ background: '#FEF3C7', padding: '1rem', borderRadius: '50%', color: '#B45309' }}>
-                      <ShieldCheck size={32} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>Safe & Secure</h3>
-                      <p style={{ color: '#4b5563', lineHeight: '1.6' }}>
-                        Nabha 24|7 Personal Health Record stores all your data in a secure environment and gives you complete control over who can access your Health Records.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setCustomerAuthMode('login');
-                    setShowCustomerAuth(true);
-                    resetCustomerAuthForms();
-                  }}
-                  style={{
-                    backgroundColor: '#115E59',
-                    color: 'white',
-                    padding: '1rem 3rem',
-                    fontSize: '1.1rem',
-                    fontWeight: 'bold',
-                    borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 6px rgba(17, 94, 89, 0.2)',
-                    marginBottom: '2rem'
-                  }}
-                >
-                  Login Now
-                </button>
-
-                <div style={{ background: '#F3F4F6', padding: '1.5rem', borderRadius: '12px' }}>
-                  <h4 style={{ fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>Not able to Login?</h4>
-                  <p style={{ color: '#4b5563', fontSize: '0.9rem' }}>
-                    If you are an international patient or having trouble logging in, you can reach out to our customer support team by emailing your concern to us at <a href="mailto:helpdesk@Nabha247.com" style={{ color: '#115E59', fontWeight: 'bold' }}>helpdesk@Nabha247.com</a>
-                  </p>
-                </div>
-
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -3868,8 +3878,8 @@ const Pharmacy = () => {
           </div>
         )}
 
-        {/* Customer Authentication Modal */}
-        {showCustomerAuth && (
+        {/* Customer Authentication Modal (Disabled - using global useAuth modal now) */}
+        {false && (
           <div className="auth-modal">
             <div className="auth-modal-content">
               <button

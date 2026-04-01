@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext();
 
@@ -12,19 +13,36 @@ export const AuthProvider = ({ children }) => {
             return null;
         }
     });
+    const [token, setToken] = useState(() => localStorage.getItem('token') || null);
+    const [isAuthModalOpen, setAuthModalOpen] = useState(false);
 
-    const login = (userData) => {
+    useEffect(() => {
+        if (token) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+            delete axios.defaults.headers.common['Authorization'];
+        }
+    }, [token]);
+
+    const login = (userData, jwtToken) => {
         setUser(userData);
+        setToken(jwtToken);
         localStorage.setItem('user', JSON.stringify(userData));
+        if (jwtToken) {
+            localStorage.setItem('token', jwtToken);
+        }
     };
 
     const logout = () => {
         setUser(null);
+        setToken(null);
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setAuthModalOpen(false);
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, token, login, logout, isAuthModalOpen, setAuthModalOpen }}>
             {children}
         </AuthContext.Provider>
     );

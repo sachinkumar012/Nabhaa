@@ -5,12 +5,14 @@ import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-export default function AuthSidebar({ isOpen, onClose }) {
-    const { login } = useAuth();
+export default function AuthSidebar() {
+    const { login, isAuthModalOpen, setAuthModalOpen } = useAuth();
     const [step, setStep] = useState('email'); // 'email' | 'otp'
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    const onClose = () => setAuthModalOpen(false);
 
     const handleSendOtp = async () => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,7 +46,7 @@ export default function AuthSidebar({ isOpen, onClose }) {
 
             if (response.data.success) {
                 toast.success('Login Successful!');
-                login(response.data.user); // Log the user in with backend user data
+                login(response.data.user, response.data.token); // Store user and token
                 onClose();
                 // Reset state after closing
                 setTimeout(() => {
@@ -65,11 +67,11 @@ export default function AuthSidebar({ isOpen, onClose }) {
         setOtp('');
     };
 
-    if (!isOpen) return null;
+    if (!isAuthModalOpen) return null;
 
     return (
         <AnimatePresence>
-            {isOpen && (
+            {isAuthModalOpen && (
                 <>
                     {/* Backdrop */}
                     <motion.div

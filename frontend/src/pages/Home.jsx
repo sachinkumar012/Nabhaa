@@ -12,7 +12,10 @@ import hospitalImage from '../assets/hospital_directory.jpg';
 import healthRecordImage from '../assets/health_records.jpg';
 import appointmentImage from '../assets/appointment_booking.jpg';
 import doctorTransparent from '../assets/doctor_transparent.png';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import doctorKidneyBg from '../assets/doctor_tablet_kidney_bg.png';
+import infrastructureBg from '../assets/hospital_infrastructure_bg.png';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 export default function Home() {
   const { t } = useLanguage();
@@ -110,86 +113,95 @@ export default function Home() {
     { number: '24/7', label: 'Support' },
   ];
 
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const slides = [
+    {
+      id: 0,
+      image: doctorKidneyBg,
+      content: (
+        <div className="w-full h-full relative" style={{ minHeight: '550px' }}>
+           {/* Center Badge Focus */}
+           <div className="absolute top-[20%] left-[10%] md:left-[25%] lg:left-[35%] w-64 h-64 md:w-80 md:h-80 bg-[#1D70B8] rounded-full border-[3px] border-white shadow-2xl flex flex-col justify-center items-center text-center p-6 z-20 animate-[pulse_6s_ease-in-out_infinite]">
+              <div className="border border-white/40 w-full h-full rounded-full flex flex-col justify-center items-center p-4">
+                 <h2 className="text-white text-xl md:text-2xl font-medium tracking-wide leading-tight mb-2">LASER SURGERY FOR</h2>
+                 <h1 className="text-white text-2xl md:text-4xl font-black tracking-wider leading-tight">KIDNEY STONES</h1>
+              </div>
+           </div>
+
+           {/* E-Consultation Floating Form */}
+           <div className="hidden lg:block absolute right-[5%] xl:right-[15%] top-1/2 -translate-y-1/2 bg-white rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden w-[380px] z-30">
+              <div className="bg-[#E51C23] text-white text-center py-3 font-bold text-[15px] tracking-wide">
+                 FREE E-CONSULTATION
+              </div>
+              <form className="p-6 flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); alert("Successfully submitted E-Consultation request!"); }}>
+                 <input type="text" placeholder="Name*" required className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm" />
+                 <div className="flex gap-4">
+                   <input type="tel" placeholder="Mobile*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm" />
+                   <input type="text" placeholder="City*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm" />
+                 </div>
+                 <textarea placeholder="Discuss Your Problem*" required rows={3} className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm resize-none"></textarea>
+                 <button type="submit" className="bg-[#1D70B8] hover:bg-[#155fc2] transition-colors text-white font-bold py-3.5 rounded-full mt-2 w-48 mx-auto shadow-md">
+                    SUBMIT
+                 </button>
+              </form>
+           </div>
+        </div>
+      )
+    },
+    {
+      id: 1,
+      image: infrastructureBg,
+      content: (
+        <div className="w-full h-full relative flex items-center" style={{ minHeight: '550px' }}>
+           <div className="bg-white/95 backdrop-blur-sm px-8 md:px-16 py-8 md:py-12 ml-0 md:ml-12 lg:ml-32 max-w-xl shadow-2xl border-l-8 border-[#1D70B8]">
+             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#0A2540] leading-tight">State-of-the-art</h1>
+             <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-[#0A2540] leading-tight mt-2">Infrastructure</h2>
+           </div>
+        </div>
+      )
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 3500); // 3.5 seconds
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
   return (
     <div className="min-h-screen bg-background text-text font-sans">
-      {/* Hero Section */}
-      <section className="relative pt-12 pb-20 lg:pt-20 lg:pb-28 overflow-hidden bg-gradient-to-br from-[#F9FCFF] via-[#E3F2FD] to-[#F9FCFF]">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-
-            {/* Text Content */}
-            <div className="w-full lg:w-1/2 text-center lg:text-left">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                <span className="inline-block py-1.5 px-4 rounded-full bg-[#E3F2FD] text-[#1A73E8] text-xs font-bold tracking-widest uppercase mb-6">
-                  Trusted Healthcare Partner
-                </span>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#1A1A1A] mb-6 leading-[1.15] tracking-tight">
-                  {t('welcome')}
-                </h1>
-              </motion.div>
-
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="text-lg md:text-xl text-gray-700 font-medium mb-6"
-              >
-                {t('subtitle')}
-              </motion.p>
-
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-base md:text-lg text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto lg:mx-0"
-              >
-                {t('description')}
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
-              >
-                <Link to="/doctors" className="btn bg-[#1A73E8] hover:bg-blue-700 text-white px-8 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 text-base font-semibold group">
-                  {t('getStarted')}
-                  <ArrowRight
-                    size={18}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
-                </Link>
-                <Link to="/about" className="btn bg-white text-[#1A73E8] border border-blue-100 hover:bg-blue-50 px-8 py-3.5 rounded-full transition-all duration-300 text-base font-semibold shadow-sm hover:shadow-md text-center">
-                  {t('learnMore') || 'Learn More'}
-                </Link>
-              </motion.div>
-            </div>
-
-            {/* Hero Image */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="w-full lg:w-1/2 relative flex justify-center"
-            >
-              <div className="relative z-10 max-w-md mx-auto">
-                <img
-                  src={doctorTransparent}
-                  alt="Doctor"
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-              {/* Decorative Elements */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#4FC3F7] rounded-full opacity-20 blur-3xl"></div>
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[#1A73E8] rounded-full opacity-10 blur-3xl"></div>
-            </motion.div>
-
-          </div>
-        </div>
+      
+      {/* Dynamic Hero Slider */}
+      <section className="relative w-full h-[550px] lg:h-[650px] bg-gray-900 overflow-hidden group">
+         {slides.map((slide, index) => (
+           <div 
+             key={slide.id}
+             className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+           >
+             <div className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${slide.image})` }}>
+                <div className="absolute inset-0 bg-black/10"></div>
+             </div>
+             <div className="relative w-full h-full z-20 container mx-auto px-4">
+                {slide.content}
+             </div>
+           </div>
+         ))}
+         
+         {/* Carousel Controls */}
+         <button 
+           onClick={() => setCurrentSlide(prev => (prev - 1 + slides.length) % slides.length)}
+           className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-4 shadow-lg z-30 transition-all opacity-0 group-hover:opacity-100"
+         >
+            <ChevronLeft size={32} />
+         </button>
+         <button 
+           onClick={() => setCurrentSlide(prev => (prev + 1) % slides.length)}
+           className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-4 shadow-lg z-30 transition-all opacity-0 group-hover:opacity-100"
+         >
+            <ChevronRight size={32} />
+         </button>
       </section>
 
       {/* Scrolling Images Section */}
