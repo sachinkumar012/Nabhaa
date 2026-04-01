@@ -2,7 +2,23 @@ const express = require('express');
 const router = express.Router();
 const LabTest = require('../models/labTestModel');
 const LabBooking = require('../models/labBookingModel');
-const { sendLabBookingConfirmation } = require('../utils/emailService');
+const { sendLabBookingConfirmation, sendCallbackRequest } = require('../utils/emailService');
+
+// Request a callback — sends phone number to admin Gmail
+router.post('/callback', async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone || !/^\d{10}$/.test(phone.toString().trim())) {
+            return res.status(400).json({ success: false, message: 'Please provide a valid 10-digit phone number.' });
+        }
+        await sendCallbackRequest(phone.toString().trim());
+        res.json({ success: true, message: 'Callback request received! Our advisor will call you shortly.' });
+    } catch (error) {
+        console.error('[Callback Route] Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to submit callback request.' });
+    }
+});
+
 
 // Get all lab tests
 router.get('/tests', async (req, res) => {

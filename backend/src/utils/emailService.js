@@ -205,4 +205,48 @@ const sendVideoConsultationEmail = async (doctorEmail, details) => {
     }
 };
 
-module.exports = { sendAppointmentEmail, sendOtpEmail, sendLabBookingConfirmation, sendVideoConsultationEmail };
+const sendCallbackRequest = async (phone) => {
+    try {
+        const port = Number(process.env.SMTP_PORT);
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: port,
+            secure: port === 465,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS.replace(/\s+/g, '')
+            },
+            tls: { rejectUnauthorized: false }
+        });
+
+        const message = `
+            <div style="font-family: Arial, sans-serif; padding: 24px; color: #333; max-width: 500px;">
+                <h2 style="color: #0F8B8D;">📞 New Callback Request — Nabha Lab Tests</h2>
+                <p>A customer has requested a callback from the <strong>Lab Tests</strong> section.</p>
+                <div style="background:#f0fdf4; border-left:4px solid #0F8B8D; padding:16px; border-radius:8px; margin:20px 0;">
+                    <p style="margin:0; font-size:1.2rem;"><strong>Customer Phone:</strong> +91 ${phone}</p>
+                    <p style="margin:8px 0 0; color:#6b7280; font-size:0.875rem;">Requested at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</p>
+                </div>
+                <p>Please call the customer on <strong>+91 ${phone}</strong> within 30 minutes.</p>
+                <hr style="border:none; border-top:1px solid #e5e7eb; margin:20px 0;" />
+                <p style="font-size:0.8rem; color:#9ca3af;">This is an automated notification from Nabha Healthcare Lab Tests portal.</p>
+            </div>
+        `;
+
+        await transporter.sendMail({
+            from: `"Nabha Healthcare" <${process.env.SMTP_USER}>`,
+            to: process.env.SMTP_USER,   // send to admin Gmail
+            subject: `📞 Callback Request: +91 ${phone} — Nabha Lab Tests`,
+            html: message
+        });
+
+        console.log('[Callback] Email sent for phone:', phone);
+        return true;
+    } catch (error) {
+        console.error('[Callback] Email error:', error);
+        return false;
+    }
+};
+
+module.exports = { sendAppointmentEmail, sendOtpEmail, sendLabBookingConfirmation, sendVideoConsultationEmail, sendCallbackRequest };
+

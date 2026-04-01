@@ -136,7 +136,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
-                className="text-lg md:text-xl text-[#1A73E8] font-medium mb-6"
+                className="text-lg md:text-xl text-gray-700 font-medium mb-6"
               >
                 {t('subtitle')}
               </motion.p>
