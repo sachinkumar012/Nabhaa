@@ -59,7 +59,7 @@ const sendOtpEmail = async (email, otp) => {
 
         if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
             console.error("FATAL: SMTP_USER or SMTP_PASS is missing in environment variables!");
-            return false;
+            throw new Error('FATAL: SMTP environment variables missing on server');
         }
 
         const port = Number(process.env.SMTP_PORT) || 587;
@@ -105,7 +105,7 @@ const sendOtpEmail = async (email, otp) => {
         return true;
     } catch (error) {
         console.error("Error sending OTP email:", error);
-        return false;
+        throw error;
     }
 };
 
