@@ -8,13 +8,13 @@ const { searchMedicine, addMedicine, getSubstitutes } = require('../controllers/
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB (up from 5MB for high-res prescriptions)
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB (increased for high-res mobile photos)
   fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/bmp'];
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/bmp', 'image/heic', 'image/heif'];
     if (allowed.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files (JPG, PNG, WebP, TIFF) are accepted for prescription upload.'), false);
+      cb(new Error('Only image files (JPG, PNG, WebP, TIFF, HEIC) are accepted for prescription upload.'), false);
     }
   },
 });
