@@ -69,19 +69,45 @@ const Hospitals = () => {
   };
 
   return (
-    <div className="min-h-screen bg-light" style={{ paddingTop: '5rem', paddingBottom: '4rem' }}>
-      <div className="container">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-          style={{ marginBottom: '3rem' }}
-        >
-          <h1>Healthcare Facilities in Nabha</h1>
-          <p className="text-gray-600">
-            Find trusted hospitals and medical centers in Nabha with comprehensive healthcare services
+    <div className="min-h-screen bg-slate-50 pb-16 pt-16">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-[#075985] to-[#1e3a8a] text-white py-16 px-4">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <Building2 size={16} />
+            Healthcare Facilities
+          </div>
+          <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">
+            Top Hospitals in Nabha <br className="hidden sm:block" />
+            <span className="text-yellow-300">Trusted & Verified</span>
+          </h1>
+          <p className="text-blue-100 text-lg max-w-2xl mx-auto">
+            Find trusted hospitals and medical centers in Nabha with comprehensive healthcare services, 24/7 emergency care, and top specialists.
           </p>
-        </motion.div>
+        </div>
+      </div>
+
+      {/* Trust Stats */}
+      <div className="max-w-6xl mx-auto px-4 -mt-8 mb-12">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+          {[
+            { icon: <Users size={22} />, value: '10,000+', label: 'Happy Patients' },
+            { icon: <Building2 size={22} />, value: '20+', label: 'Verified Hospitals' },
+            { icon: <Clock size={22} />, value: '24/7', label: 'Emergency Care' },
+            { icon: <Star size={22} />, value: '4.8/5', label: 'Customer Rating' },
+          ].map((stat, i) => (
+            <div key={i} className="text-center">
+              <div className="inline-flex items-center justify-center w-10 h-10 bg-blue-50 text-blue-600 rounded-xl mb-2">
+                {stat.icon}
+              </div>
+              <p className="text-xl font-extrabold text-gray-900">{stat.value}</p>
+              <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="container max-w-6xl mx-auto">
 
         <div className="grid grid-md-2 gap-8">
           {filteredHospitals.map((hospital, index) => (

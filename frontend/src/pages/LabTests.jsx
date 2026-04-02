@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Search, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Clock, Calendar, FlaskConical, X, Phone, ArrowUpDown, Check
+  Clock, Calendar, FlaskConical, X, Phone, ArrowUpDown, Check, Users, Star, Award, User
 } from 'lucide-react';
 import LabTestDetailsView from '../components/Pharmacy/LabTestDetailsView';
 import MyLabBookingsView from '../components/Pharmacy/MyLabBookingsView';
@@ -313,7 +313,8 @@ const CallbackBanner = ({ onClose }) => {
     }
     setStatus('loading');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/lab-tests/callback`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/lab-tests/callback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: cleaned }),
@@ -423,7 +424,8 @@ const LabTests = ({ user }) => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/lab-tests/tests`);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/lab-tests/tests`);
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         setTests(data.data);
@@ -435,7 +437,8 @@ const LabTests = ({ user }) => {
   const handleViewDetails = async (testId) => {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/lab-tests/tests/${testId}`);
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/lab-tests/tests/${testId}`);
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       setSelectedDetailTest({ ...data.data, suggestions: data.recommendations });
@@ -447,7 +450,8 @@ const LabTests = ({ user }) => {
 
   const handleBookingSubmit = async (formData, test) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/lab-tests/book`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/lab-tests/book`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ testId: test._id, patientDetails: formData, userId: user?.id || null }),
       });
@@ -522,8 +526,45 @@ const LabTests = ({ user }) => {
 
   // ── Main list view ────────────────────────────────────────────────────────
   return (
-    <div style={{ background: '#f9fafb', minHeight: '100vh', fontFamily: 'Inter, sans-serif', paddingBottom: showBanner ? 80 : 20 }}>
+    <div style={{ background: '#f9fafb', minHeight: '100vh', fontFamily: 'Inter, sans-serif', paddingBottom: showBanner ? 80 : 20, paddingTop: '64px' }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} ::-webkit-scrollbar{display:none}`}</style>
+
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-[#075985] to-[#1e3a8a] text-white py-16 px-4">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <FlaskConical size={16} />
+            Diagnostic Services
+          </div>
+          <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">
+            Accurate Lab Tests <br className="hidden sm:block" />
+            <span className="text-yellow-300">From Home</span>
+          </h1>
+          <p className="text-blue-100 text-lg max-w-2xl mx-auto">
+            Book full body checkups and advanced blood tests with free home sample collection and reports within 24 hours.
+          </p>
+        </div>
+      </div>
+
+      {/* Trust Stats */}
+      <div className="max-w-6xl mx-auto px-4 -mt-8 mb-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+          {[
+            { icon: <FlaskConical size={22} />, value: '1000+', label: 'Tests Available' },
+            { icon: <User size={22} />, value: 'Free', label: 'Home Collection' },
+            { icon: <Clock size={22} />, value: '< 24 Hrs', label: 'Reports' },
+            { icon: <Award size={22} />, value: '100%', label: 'NABL Certified Labs' },
+          ].map((stat, i) => (
+            <div key={i} className="text-center">
+              <div className="inline-flex items-center justify-center w-10 h-10 bg-blue-50 text-blue-600 rounded-xl mb-2">
+                {stat.icon}
+              </div>
+              <p className="text-xl font-extrabold text-gray-900">{stat.value}</p>
+              <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Search + My Bookings bar */}
       <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>

@@ -1,44 +1,33 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Globe, Stethoscope, Search, ShoppingCart, User, MapPin, ChevronDown, Percent, LogOut, FileText, Heart, Wallet, Bell, Gift, Phone, Clock, Award, ShieldCheck } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Globe, Stethoscope, Search, ShoppingCart, User, ChevronDown, ChevronRight, LogOut, FileText, Phone, Clock, Award, ShieldCheck, Package } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useLocationContext } from '../../modules/location/presentation/LocationContext';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
+
+/* ── Pharmacy dropdown sub-routes ─────────────────────────────────────────── */
+const PHARMACY_DROPDOWN = [
+  { name: 'Medicine', href: '/pharmacy', icon: '💊' },
+  { name: 'Lab Tests', href: '/lab-tests', icon: '🧪' },
+  { name: 'ABHA', href: '/abha', icon: '🆔' },
+  { name: 'Insurance', href: '/insurance', icon: '🛡' },
+];
+const PHARMACY_PATHS = PHARMACY_DROPDOWN.map(d => d.href);
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [pincodeInput, setPincodeInput] = useState('');
-  const [isPincodeOpen, setIsPincodeOpen] = useState(false);
+  const [isPharmacyDropdownOpen, setIsPharmacyDropdownOpen] = useState(false);
+  const [isMobilePharmacyOpen, setIsMobilePharmacyOpen] = useState(false);
+  const pharmacyRef = useRef(null);
+  const userMenuRef = useRef(null);
+
   const { t, currentLanguage, changeLanguage } = useLanguage();
   const { user, logout, setAuthModalOpen } = useAuth();
-  const { location: userLocation, updatePincode, detectLocation, isLoading, error } = useLocationContext();
+  const { cartCount } = useCart();
   const location = useLocation();
-
-  const handlePincodeSubmit = async () => {
-    if (pincodeInput.length === 6) {
-      await updatePincode(pincodeInput);
-      setIsPincodeOpen(false);
-    }
-  };
-
-  const handleDetectLocation = async () => {
-    await detectLocation();
-    setIsPincodeOpen(false);
-  };
-
-  const navigation = [
-    { name: t('home'), href: '/', key: 'home' },
-    { name: t('doctors'), href: '/doctors', key: 'doctors' },
-    { name: 'Hospitals', href: '/hospitals', key: 'hospitals' },
-    { name: 'Health Records', href: '/records', key: 'records' },
-    { name: t('pharmacy'), href: '/pharmacy', key: 'pharmacy' },
-    { name: t('symptomsNav'), href: '/symptoms', key: 'symptoms' },
-    { name: 'AI Analyzer', href: '/prescription-analysis', key: 'prescription-analysis' },
-    { name: 'Health Blog', href: '/blog', key: 'blog' },
-    { name: t('about'), href: '/about', key: 'about' },
-  ];
+  const navigate = useNavigate();
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -46,21 +35,72 @@ export default function Header() {
     { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳' },
   ];
 
+  /* ── Desktop nav items (Pharmacy handled separately) ────────────────────── */
   const mainNav = [
     { name: 'HOME', href: '/' },
     { name: 'DOCTORS', href: '/doctors' },
     { name: 'HOSPITALS', href: '/hospitals' },
     { name: 'AI ANALYZER', href: '/prescription-analysis' },
-    { name: 'HEALTH RECORDS', href: '/records' },
-    { name: 'PHARMACY', href: '/pharmacy' },
+    { name: 'PHARMACY', href: null, isDropdown: true },
     { name: 'SYMPTOM CHECKER', href: '/symptoms' },
     { name: 'HEALTH BLOG', href: '/blog' },
-    { name: 'ABOUT', href: '/about' }
+    { name: 'ABOUT', href: '/about' },
   ];
+
+  /* ── Mobile nav (Pharmacy is accordion) ─────────────────────────────────── */
+  const mobileNav = [
+    { name: 'Home', href: '/' },
+    { name: 'Doctors', href: '/doctors' },
+    { name: 'Hospitals', href: '/hospitals' },
+    { name: 'AI Analyzer', href: '/prescription-analysis' },
+    { name: 'Pharmacy', href: null, isDropdown: true },
+    { name: 'Symptom Checker', href: '/symptoms' },
+    { name: 'Health Blog', href: '/blog' },
+    { name: 'About', href: '/about' },
+  ];
+
+  /* ── Helper: is a pharmacy sub-route active? ────────────────────────────── */
+  const isPharmacyActive = PHARMACY_PATHS.some(p => location.pathname === p);
+
+  /* ── Helper: is a specific path active? ─────────────────────────────────── */
+  const isActive = (href) => {
+    if (!href) return false;
+    if (href === '/') return location.pathname === '/';
+    return location.pathname.startsWith(href);
+  };
+
+  /* ── Profile avatar: first letter ───────────────────────────────────────── */
+  const avatarLetter = user
+    ? (user.name || user.email || 'U').charAt(0).toUpperCase()
+    : '';
+
+  /* ── Close dropdowns on outside click ───────────────────────────────────── */
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (pharmacyRef.current && !pharmacyRef.current.contains(e.target)) {
+        setIsPharmacyDropdownOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  /* ── Close dropdowns on navigation ──────────────────────────────────────── */
+  useEffect(() => {
+    setIsPharmacyDropdownOpen(false);
+    setIsUserMenuOpen(false);
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <header className="w-full bg-white shadow-md sticky top-0 z-50 font-sans">
-      {/* 1. TOP STRIP - TEAL */}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          1. TOP STRIP - TEAL
+      ═══════════════════════════════════════════════════════════════════ */}
       <div className="bg-[#0F8B8D] text-white py-1.5 px-4 text-xs md:text-sm">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-6">
@@ -71,6 +111,7 @@ export default function Header() {
               <Clock size={14} /> <span>OPD Timings : 10:00AM - 5:00PM</span>
             </div>
           </div>
+
           <div className="flex items-center gap-4">
             {/* Language Selector */}
             <div className="flex items-center gap-2">
@@ -88,22 +129,59 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Seamless User Auth Integration */}
-            <div className="border-l border-white/30 pl-4 relative">
+            {/* ── Profile / Login ─────────────────────────────────────── */}
+            <div className="border-l border-white/30 pl-4 relative" ref={userMenuRef}>
               {user ? (
                 <div className="relative">
-                  <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-1.5 font-medium hover:text-white transition-colors cursor-pointer">
-                    <User size={14} /> <span className="hidden sm:inline">{user.name}</span> <ChevronDown size={14} />
-                  </button>
-                  {isUserMenuOpen && (
-                    <div className="absolute top-[150%] right-0 w-64 bg-white rounded-lg shadow-xl border border-gray-100 py-1 text-gray-800 z-50 overflow-hidden">
-                      <Link to="/records" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50"><FileText size={16} /> Medical Records</Link>
-                      <Link to="/orders" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50"><ShoppingCart size={16} /> My Orders</Link>
-                      <Link to="/profile" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50"><User size={16} /> My Profile</Link>
-                      <div className="border-t border-gray-100 my-1"></div>
-                      <button onClick={() => { logout(); setIsUserMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"><LogOut size={16} /> Log Out</button>
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center gap-2 font-medium hover:text-white transition-colors cursor-pointer"
+                    id="profile-avatar-btn"
+                  >
+                    {/* ── Avatar circle with first letter ──────────── */}
+                    <div className="w-7 h-7 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-xs font-bold text-white">
+                      {avatarLetter}
                     </div>
-                  )}
+                    <span className="hidden sm:inline text-sm">{user.name?.split(' ')[0] || 'Account'}</span>
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* ── Profile dropdown ────────────────────────── */}
+                  <div className={`absolute top-[150%] right-0 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 text-gray-800 z-50 overflow-hidden transition-all duration-200 origin-top-right ${isUserMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                    {/* Profile info header */}
+                    <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0284c7] to-[#1e3a8a] flex items-center justify-center text-white text-lg font-bold shadow-sm">
+                          {avatarLetter}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">{user.name || 'User'}</p>
+                          <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="py-1">
+                      <Link to="/health-records" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
+                        <FileText size={16} className="text-gray-400" /> Medical Records
+                      </Link>
+                      <Link to="/orders" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
+                        <Package size={16} className="text-gray-400" /> My Orders
+                      </Link>
+                      <Link to="/profile" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
+                        <User size={16} className="text-gray-400" /> My Profile
+                      </Link>
+                    </div>
+
+                    <div className="border-t border-gray-100">
+                      <button
+                        onClick={() => { logout(); setIsUserMenuOpen(false); }}
+                        className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut size={16} /> Log Out
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <button onClick={() => setAuthModalOpen(true)} className="flex items-center gap-1.5 font-medium hover:text-white transition-colors">
@@ -115,7 +193,9 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 2. MIDDLE BRAND STRIP */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          2. MIDDLE BRAND STRIP
+      ═══════════════════════════════════════════════════════════════════ */}
       <div className="bg-white">
         <div className="container mx-auto px-4 py-3 md:py-4 flex flex-wrap md:flex-nowrap items-center justify-between gap-4">
 
@@ -171,9 +251,13 @@ export default function Header() {
             </div>
 
             {/* Cart */}
-            <Link to="/pharmacy" className="relative text-[#0284c7] hover:text-[#0F8B8D] transition-colors bg-blue-50 p-2 rounded-full">
+            <Link to="/cart" className="relative text-[#0284c7] hover:text-[#0F8B8D] transition-colors bg-blue-50 p-2 rounded-full" id="header-cart-btn">
               <ShoppingCart size={20} />
-              <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow">2</span>
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
             </Link>
 
             {/* Mobile Hamburger */}
@@ -184,20 +268,72 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 3. BOTTOM NAV STRIP - DESKTOP NAV */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          3. BOTTOM NAV STRIP - DESKTOP (with Pharmacy dropdown)
+      ═══════════════════════════════════════════════════════════════════ */}
       <nav className="hidden md:flex bg-[#2573CA] border-y border-blue-500 text-white w-full h-[46px] items-stretch shadow-[0_4px_10px_rgba(0,0,0,0.05)] relative z-20">
         <div className="container mx-auto px-0 flex justify-between h-full">
           <div className="flex items-center h-full w-full">
-            {mainNav.map((item, idx) => (
-              <Link
-                key={item.href + idx}
-                to={item.href}
-                className={`flex-1 flex items-center justify-center h-full px-1 lg:px-2 text-[10px] lg:text-[11px] xl:text-[12px] text-white hover:text-white font-semibold tracking-wider uppercase border-r border-blue-400/50 hover:bg-blue-600/50 transition-colors whitespace-nowrap overflow-hidden ${idx === 0 ? 'border-l' : ''} ${location.pathname === item.href ? 'bg-[#155fc2]' : ''}`}
-              >
-                <span className="truncate">{item.name}</span>
-              </Link>
-            ))}
+            {mainNav.map((item, idx) => {
+              /* ── Pharmacy dropdown item ─────────────────────────── */
+              if (item.isDropdown) {
+                return (
+                  <div
+                    key="pharmacy-dropdown"
+                    ref={pharmacyRef}
+                    className="relative flex-1 h-full"
+                    onMouseEnter={() => setIsPharmacyDropdownOpen(true)}
+                    onMouseLeave={() => setIsPharmacyDropdownOpen(false)}
+                  >
+                    <button
+                      onClick={() => setIsPharmacyDropdownOpen(!isPharmacyDropdownOpen)}
+                      className={`w-full flex items-center justify-center gap-1 h-full px-1 lg:px-2 text-[10px] lg:text-[11px] xl:text-[12px] text-white hover:text-white font-semibold tracking-wider uppercase border-r border-blue-400/50 hover:bg-blue-600/50 transition-colors whitespace-nowrap overflow-hidden ${isPharmacyActive ? 'bg-[#155fc2]' : ''}`}
+                      id="pharmacy-dropdown-trigger"
+                    >
+                      <span className="truncate">{item.name}</span>
+                      <ChevronDown size={12} className={`shrink-0 transition-transform duration-200 ${isPharmacyDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* ── Dropdown panel ───────────────────────────── */}
+                    <div
+                      className={`absolute top-full left-0 w-56 bg-white rounded-b-xl shadow-2xl border border-gray-100 border-t-0 text-gray-800 z-50 overflow-hidden transition-all duration-200 origin-top ${isPharmacyDropdownOpen ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-95 pointer-events-none'}`}
+                    >
+                      {PHARMACY_DROPDOWN.map((sub) => (
+                        <Link
+                          key={sub.href}
+                          to={sub.href}
+                          onClick={() => setIsPharmacyDropdownOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors group ${
+                            location.pathname === sub.href
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          <span className="text-lg">{sub.icon}</span>
+                          <span className="group-hover:translate-x-0.5 transition-transform">{sub.name}</span>
+                          {location.pathname === sub.href && (
+                            <ChevronRight size={14} className="ml-auto text-blue-400" />
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              /* ── Normal nav item ────────────────────────────────── */
+              return (
+                <Link
+                  key={item.href + idx}
+                  to={item.href}
+                  className={`flex-1 flex items-center justify-center h-full px-1 lg:px-2 text-[10px] lg:text-[11px] xl:text-[12px] text-white hover:text-white font-semibold tracking-wider uppercase border-r border-blue-400/50 hover:bg-blue-600/50 transition-colors whitespace-nowrap overflow-hidden ${idx === 0 ? 'border-l' : ''} ${isActive(item.href) ? 'bg-[#155fc2]' : ''}`}
+                >
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              );
+            })}
           </div>
+
           <button
             type="button"
             onClick={() => setAuthModalOpen(true)}
@@ -208,7 +344,9 @@ export default function Header() {
         </div>
       </nav>
 
-      {/* MOBILE DRAWER MENU - REPLICATING SCREENSHOT */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          4. MOBILE DRAWER MENU
+      ═══════════════════════════════════════════════════════════════════ */}
       <div className={`fixed inset-0 z-50 transform transition-transform duration-300 md:hidden flex ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Backdrop */}
         <div className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsMenuOpen(false)}></div>
@@ -218,7 +356,9 @@ export default function Header() {
           {/* Header / Logo */}
           <div className="flex items-center justify-between p-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              <button onClick={() => setIsMenuOpen(false)} className="p-1 border border-primary/20 bg-primary-50 rounded text-primary hover:bg-primary/20"><X size={22} /></button>
+              <button onClick={() => setIsMenuOpen(false)} className="p-1 border border-gray-200 bg-gray-50 rounded text-gray-600 hover:bg-gray-100">
+                <X size={22} />
+              </button>
               <Link to="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
                 <div className="bg-[#1D70B8] text-white p-1.5 rounded-full">
                   <Stethoscope size={20} />
@@ -232,9 +372,19 @@ export default function Header() {
             {/* Controls */}
             <div className="flex items-center gap-3">
               <button onClick={() => changeLanguage(currentLanguage === 'en' ? 'hi' : 'en')}><Globe size={20} className="text-gray-600" /></button>
-              <button onClick={() => setAuthModalOpen(true)}><User size={20} className="text-gray-600" /></button>
-              <button className="relative text-gray-600"><Percent size={20} /></button>
-              <button className="relative text-gray-600"><ShoppingCart size={20} /><span className="absolute -top-1.5 -right-1.5 bg-teal-500 text-white text-[10px] w-3.5 h-3.5 flex items-center justify-center rounded-full font-bold">0</span></button>
+              {user ? (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0284c7] to-[#1e3a8a] flex items-center justify-center text-white text-sm font-bold">
+                  {avatarLetter}
+                </div>
+              ) : (
+                <button onClick={() => { setAuthModalOpen(true); setIsMenuOpen(false); }}><User size={20} className="text-gray-600" /></button>
+              )}
+              <Link to="/cart" onClick={() => setIsMenuOpen(false)} className="relative text-gray-600">
+                <ShoppingCart size={20} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-teal-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full font-bold">{cartCount > 99 ? '99+' : cartCount}</span>
+                )}
+              </Link>
             </div>
           </div>
 
@@ -248,30 +398,87 @@ export default function Header() {
 
           {/* Scrolling Menu Links */}
           <div className="flex-1 overflow-y-auto w-full pb-4 scrollbar-hide">
+            {/* Profile section if logged in */}
+            {user && (
+              <div className="px-5 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0284c7] to-[#1e3a8a] flex items-center justify-center text-white text-xl font-bold shadow">
+                    {avatarLetter}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-900 truncate">{user.name || 'User'}</p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Link to="/orders" onClick={() => setIsMenuOpen(false)} className="flex-1 text-center py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors">
+                    My Orders
+                  </Link>
+                  <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex-1 text-center py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-bold hover:bg-gray-200 transition-colors">
+                    My Profile
+                  </Link>
+                </div>
+              </div>
+            )}
+
             <div className="px-5 py-3 pt-4 text-[11px] font-bold text-gray-400 tracking-widest uppercase mb-1">MENU</div>
             <div className="flex flex-col px-3">
-              {[
-                { name: 'Home', href: '/' },
-                { name: 'Doctors', href: '/doctors' },
-                { name: 'Hospitals', href: '/hospitals' },
-                { name: 'Health Records', href: '/records' },
-                { name: 'Pharmacy', href: '/pharmacy' },
-                { name: 'Symptom Checker', href: '/symptoms' },
-                { name: 'AI Analyzer', href: '/prescription-analysis' },
-                { name: 'Health Blog', href: '/blog' },
-                { name: 'About', href: '/about' }
-              ].map(item => (
-                <Link key={item.name} to={item.href} onClick={() => setIsMenuOpen(false)} className={`px-4 py-3 rounded text-[15px] font-medium transition-colors ${location.pathname === item.href ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                  {item.name}
-                </Link>
-              ))}
+              {mobileNav.map((item) => {
+                /* ── Pharmacy accordion ─────────────────────────── */
+                if (item.isDropdown) {
+                  return (
+                    <div key="pharmacy-accordion">
+                      <button
+                        onClick={() => setIsMobilePharmacyOpen(!isMobilePharmacyOpen)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded text-[15px] font-medium transition-colors ${isPharmacyActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:bg-gray-50'}`}
+                      >
+                        <span>Pharmacy</span>
+                        <ChevronDown size={16} className={`transition-transform duration-200 ${isMobilePharmacyOpen ? 'rotate-180' : ''} ${isPharmacyActive ? 'text-teal-600' : 'text-gray-400'}`} />
+                      </button>
+
+                      {/* Accordion content */}
+                      <div className={`overflow-hidden transition-all duration-300 ${isMobilePharmacyOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <div className="pl-4 pr-2 pb-1 space-y-0.5">
+                          {PHARMACY_DROPDOWN.map((sub) => (
+                            <Link
+                              key={sub.href}
+                              to={sub.href}
+                              onClick={() => setIsMenuOpen(false)}
+                              className={`flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium transition-colors ${
+                                location.pathname === sub.href
+                                  ? 'text-teal-700 bg-teal-50/70'
+                                  : 'text-gray-600 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>{sub.icon}</span>
+                              <span>{sub.name}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                /* ── Normal mobile nav item ────────────────────── */
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`px-4 py-3 rounded text-[15px] font-medium transition-colors ${isActive(item.href) ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
             </div>
 
             <div className="mx-5 my-6 border-t border-gray-100"></div>
 
             {/* Settings Section */}
             <div className="px-5 text-[11px] font-bold text-gray-400 tracking-widest uppercase mb-4">SETTINGS</div>
-            <div className="px-5 flex items-center justify-between mb-8">
+            <div className="px-5 flex items-center justify-between mb-4">
               <span className="text-[15px] text-gray-700 font-medium">Language</span>
               <div className="flex gap-1.5">
                 {languages.map(lang => (
@@ -281,6 +488,18 @@ export default function Header() {
                 ))}
               </div>
             </div>
+
+            {/* Logout button if logged in */}
+            {user && (
+              <div className="px-5 mb-4">
+                <button
+                  onClick={() => { logout(); setIsMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 font-medium hover:bg-red-50 transition-colors text-sm"
+                >
+                  <LogOut size={16} /> Log Out
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Bottom Button */}

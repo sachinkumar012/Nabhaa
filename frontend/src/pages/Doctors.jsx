@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Star, Clock, Phone, MessageCircle, CheckCircle, XCircle, Video } from 'lucide-react';
+import { Star, Clock, Phone, MessageCircle, CheckCircle, XCircle, Video, Users, User, Heart } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import AuthSidebar from '../components/Auth/AuthSidebar';
@@ -80,19 +80,45 @@ export default function Doctors() {
   };
 
   return (
-    <div className="min-h-screen bg-light" style={{ paddingTop: '5rem', paddingBottom: '4rem' }}>
-      <div className="container">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-          style={{ marginBottom: '3rem' }}
-        >
-          <h1>{t('doctorsList')}</h1>
-          <p className="text-gray-600">
-            Connect with experienced doctors who understand rural healthcare needs
+    <div className="min-h-screen bg-slate-50 pb-16 pt-16">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-[#075985] to-[#1e3a8a] text-white py-16 px-4">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <User size={16} />
+            Expert Medical Professionals
+          </div>
+          <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">
+            Consult Top Doctors <br className="hidden sm:block" />
+            <span className="text-yellow-300">Online & Offline</span>
+          </h1>
+          <p className="text-blue-100 text-lg max-w-2xl mx-auto">
+            Connect with experienced doctors who understand rural healthcare needs. Book video consultations or in-person visits instantly.
           </p>
-        </motion.div>
+        </div>
+      </div>
+
+      {/* Trust Stats */}
+      <div className="max-w-6xl mx-auto px-4 -mt-8 mb-12">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+          {[
+            { icon: <Users size={22} />, value: '100+', label: 'Active Doctors' },
+            { icon: <Heart size={22} />, value: '20+', label: 'Specialties' },
+            { icon: <Clock size={22} />, value: '< 15 min', label: 'Wait Time' },
+            { icon: <Star size={22} />, value: '4.9/5', label: 'Patient Rating' },
+          ].map((stat, i) => (
+            <div key={i} className="text-center">
+              <div className="inline-flex items-center justify-center w-10 h-10 bg-blue-50 text-blue-600 rounded-xl mb-2">
+                {stat.icon}
+              </div>
+              <p className="text-xl font-extrabold text-gray-900">{stat.value}</p>
+              <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="container max-w-6xl mx-auto">
 
         <div className="grid grid-md-2 gap-8">
           {loading && <div className="text-center col-span-2">Loading Doctors...</div>}

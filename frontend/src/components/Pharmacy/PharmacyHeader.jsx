@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Search, ShoppingCart, User, MapPin, ChevronDown, Percent, FileText, Stethoscope, Activity, Plus, Menu } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, ShoppingCart, User, MapPin, ChevronDown, Percent, FileText, Stethoscope, Activity, Plus, Menu, Package } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const PharmacyHeader = ({
     user,
@@ -13,6 +13,7 @@ const PharmacyHeader = ({
     const [pincode, setPincode] = useState(location);
     const [isPincodeOpen, setIsPincodeOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const navigate = useNavigate();
 
     const handlePincodeSubmit = (e) => {
         e.preventDefault();
@@ -121,12 +122,12 @@ const PharmacyHeader = ({
                         <span>Offers</span>
                     </button>
 
-                    <button onClick={onCartClick} className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors relative">
+                    <button onClick={() => navigate('/cart')} className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors relative">
                         <ShoppingCart size={20} />
                         <span className="hidden sm:block">Cart</span>
                         {cartCount > 0 && (
                             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-white">
-                                {cartCount}
+                                {cartCount > 99 ? '99+' : cartCount}
                             </span>
                         )}
                     </button>
@@ -143,6 +144,9 @@ const PharmacyHeader = ({
                         </Link>
                         <Link to="/doctors" className="hover:text-teal-600 whitespace-nowrap transition-colors">Doctor Consult</Link>
                         <Link to="/lab-tests" className="hover:text-teal-600 whitespace-nowrap transition-colors">Lab Tests</Link>
+                        <Link to="/orders" className="hover:text-teal-600 whitespace-nowrap transition-colors flex items-center gap-1.5">
+                            <Package size={14} /> My Orders
+                        </Link>
                         <Link to="/plus" className="hover:text-teal-600 whitespace-nowrap bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-xs font-bold border border-orange-100">PLUS</Link>
                         <Link to="/health-insights" className="hover:text-teal-600 whitespace-nowrap transition-colors">Health Insights</Link>
                     </nav>
@@ -166,6 +170,9 @@ const PharmacyHeader = ({
                             <Link to="/healthcare">Healthcare</Link>
                             <Link to="/doctors">Doctor Consult</Link>
                             <Link to="/lab-tests">Lab Tests</Link>
+                            <Link to="/orders" className="flex items-center gap-1.5 text-teal-600 font-semibold">
+                              <Package size={14} /> My Orders
+                            </Link>
                             <Link to="/plus">PLUS</Link>
                         </nav>
                     </div>

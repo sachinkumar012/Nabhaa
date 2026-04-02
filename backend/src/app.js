@@ -77,6 +77,7 @@ app.use('/api/auth', authRoutes);
 console.log('Mounting /api/admin routes');
 app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/lab-tests', require('./routes/labRoutes'));
 app.use('/api/prescriptions', prescriptionRoutes);
 

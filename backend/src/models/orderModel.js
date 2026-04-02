@@ -10,13 +10,14 @@ const orderSchema = new mongoose.Schema({
         {
             name: { type: String, required: true },
             qty: { type: Number, required: true },
-            image: { type: String, required: true },
+            image: { type: String, default: '' },
             price: { type: Number, required: true },
             medicine: {
-                type: mongoose.Schema.Types.ObjectId,
+                type: mongoose.Schema.Types.Mixed,  // accepts ObjectId or string productId
                 ref: 'Medicine',
-                required: true
-            }
+                required: false
+            },
+            source: { type: String, default: 'normal' }
         }
     ],
     shippingAddress: {
