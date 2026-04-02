@@ -1,806 +1,531 @@
-import { useState, useRef, useEffect } from "react";
-import { Mic, MicOff, Send, Volume2, VolumeX, Stethoscope, Calendar, Phone, MapPin, Clock, AlertCircle, CheckCircle, Activity, Trash2, History } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  Mic, MicOff, Send, Volume2, VolumeX, Stethoscope,
+  AlertCircle, CheckCircle, ShoppingCart, MapPin,
+  Clock, ChevronDown, ChevronUp, Zap, Heart,
+  Pill, UserCheck, Shield, Loader2, Globe, PhoneCall, Sparkles
+} from "lucide-react";
+import { useCart } from "../context/CartContext";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_BASE = import.meta.env.VITE_API_URL;
+const DEFAULT_AVATAR_POSTER = "https://res.cloudinary.com/dnnkimx5e/image/upload/v1775154589/avatars/l974ooq6loifpxn0rlux.png";
 
-// Language Configuration
-const LANGUAGES = {
+/* ─── Language Config ──────────────────────────────────────────────────────── */
+const LANG = {
   en: {
-    code: 'en',
-    name: 'English',
-    flag: '🇺🇸',
-    welcomeMessage: "🤖 Hello! I'm your AI Health Agent. I can help you with symptoms, book appointments, find doctors, and take immediate action for your health needs. How can I assist you today?\n\n💡 Tip: You can type 'change language' anytime to switch languages.",
-    welcomeBack: "👋 Welcome back! Your chat history has been restored. How can I help you now?",
-    placeholder: "Describe your symptoms or ask a health question...",
-    listening: "Listening... Speak now",
-    agentThinking: "AI Agent is analyzing and planning actions...",
-    speechRecognition: 'en-US'
+    name: "EN", speechCode: "en-US",
+    placeholder: "Describe your symptoms (e.g. fever, headache for 2 days)…",
+    thinking: "Analyzing your symptoms…",
+    generatingVideo: "Generating AI Response...",
+    disclaimer: "⚠️ This is not a medical diagnosis. Always consult a qualified doctor.",
+    urgentAlert: "🚨 Your symptoms may require immediate medical attention. Please visit a hospital now.",
+    sections: { conditions: "Possible Conditions", medicines: "Recommended Medicines", doctors: "Nearby Doctors", precautions: "Precautions", homeRemedies: "Home Remedies" },
+    addCart: "Add to Cart", addedCart: "Added ✓", retry: "Try Again", clear: "Clear Chat", listenLabel: "Listening…",
   },
   hi: {
-    code: 'hi',
-    name: 'हिंदी',
-    flag: '🇮🇳',
-    welcomeMessage: "🤖 नमस्ते! मैं आपका AI स्वास्थ्य एजेंट हूँ। मैं लक्षणों की जांच, अपॉइंटमेंट बुकिंग, डॉक्टर ढूंढने और आपकी स्वास्थ्य जरूरतों के लिए तत्काल कार्रवाई में मदद कर सकता हूँ। आज मैं आपकी कैसे सहायता कर सकता हूँ?\n\n💡 सुझाव: भाषा बदलने के लिए कभी भी 'भाषा बदलें' टाइप करें।",
-    welcomeBack: "👋 वापस स्वागत है! आपका चैट इतिहास बहाल कर दिया गया है। अब मैं आपकी कैसे मदद कर सकता हूँ?",
-    placeholder: "अपने लक्षण बताएं या स्वास्थ्य संबंधी प्रश्न पूछें...",
-    listening: "सुन रहा हूँ... अब बोलें",
-    agentThinking: "AI एजेंट विश्लेषण और कार्य योजना बना रहा है...",
-    speechRecognition: 'hi-IN'
+    name: "हिंदी", speechCode: "hi-IN",
+    placeholder: "अपने लक्षण बताएं (जैसे: बुखार, सिरदर्द)…",
+    thinking: "आपके लक्षणों का विश्लेषण हो रहा है…",
+    generatingVideo: "AI वीडियो बना रहा है...",
+    disclaimer: "⚠️ यह चिकित्सा निदान नहीं है। हमेशा योग्य डॉक्टर से परामर्श लें।",
+    urgentAlert: "🚨 आपके लक्षणों के लिए तत्काल चिकित्सा आवश्यकता हो सकती है।",
+    sections: { conditions: "संभावित स्थितियाँ", medicines: "अनुशंसित दवाएं", doctors: "नजदीकी डॉक्टर", precautions: "सावधानियाँ", homeRemedies: "घरेलू उपचार" },
+    addCart: "कार्ट में जोड़ें", addedCart: "जोड़ा गया ✓", retry: "पुनः प्रयास", clear: "चैट साफ करें", listenLabel: "सुन रहा हूँ…",
   },
   pa: {
-    code: 'pa',
-    name: 'ਪੰਜਾਬੀ',
-    flag: '🇮🇳',
-    welcomeMessage: "🤖 ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਤੁਹਾਡਾ AI ਸਿਹਤ ਏਜੰਟ ਹਾਂ। ਮੈਂ ਲੱਛਣਾਂ ਦੀ ਜਾਂਚ, ਅਪਾਇਂਟਮੈਂਟ ਬੁੱਕਿੰਗ, ਡਾਕਟਰ ਲੱਭਣ ਅਤੇ ਤੁਹਾਡੀਆਂ ਸਿਹਤ ਲੋੜਾਂ ਲਈ ਤੁਰੰਤ ਕਾਰਵਾਈ ਵਿੱਚ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ। ਅੱਜ ਮੈਂ ਤੁਹਾਡੀ ਕਿਵੇਂ ਸਹਾਇਤਾ ਕਰ ਸਕਦਾ ਹਾਂ?\n\n💡 ਸੁਝਾਅ: ਭਾਸ਼ਾ ਬਦਲਣ ਲਈ ਕਦੇ ਵੀ 'ਭਾਸ਼ਾ ਬਦਲੋ' ਟਾਈਪ ਕਰੋ।",
-    welcomeBack: "👋 ਵਾਪਸ ਜੀ ਆਇਆਂ ਨੂੰ! ਤੁਹਾਡਾ ਚੈਟ ਇਤਿਹਾਸ ਬਹਾਲ ਕਰ ਦਿੱਤਾ ਗਿਆ ਹੈ। ਹੁਣ ਮੈਂ ਤੁਹਾਡੀ ਕਿਵੇਂ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
-    placeholder: "ਆਪਣੇ ਲੱਛਣ ਦੱਸੋ ਜਾਂ ਸਿਹਤ ਸੰਬੰਧੀ ਸਵਾਲ ਪੁੱਛੋ...",
-    listening: "ਸੁਣ ਰਿਹਾ ਹਾਂ... ਹੁਣ ਬੋਲੋ",
-    agentThinking: "AI ਏਜੰਟ ਵਿਸ਼ਲੇਸ਼ਣ ਅਤੇ ਕਾਰਜ ਯੋਜਨਾ ਬਣਾ ਰਿਹਾ ਹੈ...",
-    speechRecognition: 'pa-IN'
+    name: "ਪੰਜਾਬੀ", speechCode: "pa-IN",
+    placeholder: "ਆਪਣੇ ਲੱਛਣ ਦੱਸੋ (ਜਿਵੇਂ: ਬੁਖਾਰ, ਸਿਰਦਰਦ)…",
+    thinking: "ਤੁਹਾਡੇ ਲੱਛਣਾਂ ਦਾ ਵਿਸ਼ਲੇਸ਼ਣ ਹੋ ਰਿਹਾ ਹੈ…",
+    generatingVideo: "AI ਵੀਡੀਓ ਬਣਾ ਰਿਹਾ ਹੈ...",
+    disclaimer: "⚠️ ਇਹ ਡਾਕਟਰੀ ਨਿਦਾਨ ਨਹੀਂ ਹੈ। ਹਮੇਸ਼ਾ ਯੋਗ ਡਾਕਟਰ ਨਾਲ ਸਲਾਹ ਕਰੋ।",
+    urgentAlert: "🚨 ਤੁਹਾਡੇ ਲੱਛਣਾਂ ਲਈ ਤੁਰੰਤ ਡਾਕਟਰੀ ਧਿਆਨ ਦੀ ਲੋੜ ਹੋ ਸਕਦੀ ਹੈ।",
+    sections: { conditions: "ਸੰਭਾਵਿਤ ਸਥਿਤੀਆਂ", medicines: "ਸਿਫਾਰਸ਼ੀ ਦਵਾਈਆਂ", doctors: "ਨੇੜੇ ਦੇ ਡਾਕਟਰ", precautions: "ਸਾਵਧਾਨੀਆਂ", homeRemedies: "ਘਰੇਲੂ ਉਪਾਅ" },
+    addCart: "ਕਾਰਟ ਵਿੱਚ ਜੋੜੋ", addedCart: "ਜੋੜਿਆ ✓", retry: "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼", clear: "ਚੈਟ ਸਾਫ਼ ਕਰੋ", listenLabel: "ਸੁਣ ਰਿਹਾ ਹਾਂ…",
   }
 };
 
-// Backend API Configuration
-const BACKEND_CONFIG = {
-  API_BASE_URL: process.env.NODE_ENV === 'production'
-    ? 'https://your-backend-api.com/api'
-    : `${import.meta.env.VITE_API_URL}/api`,
-  ENDPOINTS: {
-    SAVE_CHAT: '/chat/save',
-    LOAD_CHAT: '/chat/load',
-    CLEAR_CHAT: '/chat/clear'
-  }
-};
-
-// Chat Storage Service
-const ChatStorageService = {
-  getUserSessionId: () => {
-    let sessionId = localStorage.getItem('userSessionId');
-    if (!sessionId) {
-      sessionId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('userSessionId', sessionId);
-    }
-    return sessionId;
-  },
-
-  saveChat: async (messages) => {
-    const sessionId = ChatStorageService.getUserSessionId();
-    // Fallback to localStorage for now as backend might not be ready
-    try {
-      localStorage.setItem('aiHealthAgentMessages', JSON.stringify(messages));
-      localStorage.setItem('chatLastSaved', new Date().toISOString());
-    } catch (error) {
-      console.error('Error saving chat history:', error);
-    }
-  },
-
-  loadChat: async () => {
-    try {
-      const savedMessages = localStorage.getItem('aiHealthAgentMessages');
-      if (savedMessages) {
-        const parsedMessages = JSON.parse(savedMessages);
-        return parsedMessages.map(msg => {
-          // Migration: Handle old format
-          const content = msg.content || { text: msg.text || '' };
-          let type = msg.type;
-          if (!type) {
-            type = msg.isBot ? 'agent' : 'user';
-          }
-
-          return {
-            ...msg,
-            type,
-            content,
-            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
-          };
-        });
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-    }
-    return null;
-  },
-
-  clearChat: async () => {
-    try {
-      localStorage.removeItem('aiHealthAgentMessages');
-      localStorage.removeItem('chatLastSaved');
-    } catch (error) {
-      console.error('Error clearing localStorage:', error);
-    }
-  }
-};
-
-// Agent Tools
-const AGENT_TOOLS = {
-  BOOK_APPOINTMENT: 'book_appointment',
-  FIND_DOCTOR: 'find_doctor',
-  EMERGENCY_ALERT: 'emergency_alert',
-  HEALTH_TRACKING: 'health_tracking',
-  MEDICATION_REMINDER: 'medication_reminder',
-  SYMPTOM_ANALYSIS: 'symptom_analysis',
-  CALL_DOCTOR: 'call_doctor',
-  NEARBY_HOSPITALS: 'nearby_hospitals'
-};
-
-// UI Components
-const AgentThought = ({ thought, isExpanded, onToggle }) => (
-  <div className="mb-4 rounded-lg border border-indigo-100 bg-indigo-50/50 overflow-hidden">
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center justify-between p-3 text-sm font-medium text-indigo-800 hover:bg-indigo-50 transition-colors"
-    >
-      <div className="flex items-center gap-2">
-        <Activity className="w-4 h-4 animate-pulse" />
-        <span>Agent Reasoning Process</span>
-      </div>
-      {isExpanded ? <div className="w-4 h-4">▲</div> : <div className="w-4 h-4">▼</div>}
-    </button>
-    {isExpanded && (
-      <div className="p-3 pt-0 text-sm text-indigo-700 font-mono border-t border-indigo-100 bg-white/50 whitespace-pre-wrap">
-        {thought}
-      </div>
-    )}
-  </div>
-);
-
-const AgentPlan = ({ plan = [] }) => (
-  <div className="mb-4 bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      <div className="w-4 h-4 text-green-600">✓</div>
-      Action Plan
-    </h4>
-    <div className="space-y-2">
-      {plan.map((step, idx) => (
-        <div key={idx} className="flex items-start gap-3 text-sm">
-          <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-xs border ${step.status === 'completed' ? 'bg-green-100 border-green-200 text-green-700' :
-            step.status === 'active' ? 'bg-blue-100 border-blue-200 text-blue-700 animate-pulse' :
-              'bg-gray-50 border-gray-200 text-gray-400'
-            }`}>
-            {step.status === 'completed' ? <CheckCircle className="w-3 h-3" /> : idx + 1}
-          </div>
-          <span className={`${step.status === 'completed' ? 'text-gray-500 line-through' :
-            step.status === 'active' ? 'text-blue-700 font-medium' :
-              'text-gray-600'
-            }`}>
-            {step.text}
-          </span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const ToolExecution = ({ tool, status, result }) => (
-  <div className="my-2 flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
-    <div className={`p-2 rounded-full ${status === 'running' ? 'bg-blue-100 text-blue-600 animate-spin' :
-      status === 'completed' ? 'bg-green-100 text-green-600' :
-        'bg-red-100 text-red-600'
-      }`}>
-      {status === 'running' ? <Activity className="w-4 h-4" /> :
-        status === 'completed' ? <CheckCircle className="w-4 h-4" /> :
-          <AlertCircle className="w-4 h-4" />}
-    </div>
-    <div className="flex-1">
-      <div className="text-sm font-medium text-gray-900">
-        {tool.label}
-      </div>
-      <div className="text-xs text-gray-500">
-        {status === 'running' ? 'Executing...' : result || 'Completed'}
-      </div>
-    </div>
-  </div>
-);
-
-const AppointmentModal = ({ isOpen, onClose, onSubmit, initialData = {} }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    gender: '',
-    phone: '',
-    date: '',
-    time: '',
-    reason: '',
-    ...initialData
-  });
-  const [activeField, setActiveField] = useState(null);
-  const [isListening, setIsListening] = useState(false);
+/* ─── Interactive D-ID Video Avatar ────────────────────────────────────────── */
+const AIAvatar = ({ videoUrl, isGenerating, isThinking, lang }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
 
   useEffect(() => {
-    if (initialData) {
-      setFormData(prev => ({ ...prev, ...initialData }));
+    if (videoUrl && videoRef.current) {
+      videoRef.current.play().catch(e => console.error("Video play prevented:", e));
     }
-  }, [initialData]);
-
-  const handleVoiceInput = (field) => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'en-US'; // Default to English, could be dynamic
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-        setActiveField(field);
-      };
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setFormData(prev => ({ ...prev, [field]: transcript }));
-        setIsListening(false);
-        setActiveField(null);
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
-        setIsListening(false);
-        setActiveField(null);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        setActiveField(null);
-      };
-
-      recognition.start();
-    } else {
-      alert("Speech recognition not supported in this browser.");
-    }
-  };
-
-  if (!isOpen) return null;
+  }, [videoUrl]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white flex justify-between items-center">
-          <h3 className="text-xl font-bold flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Book Appointment
-          </h3>
-          <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
-            <VolumeX className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="flex flex-col items-center p-6 h-full relative w-full">
+      <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-full overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-gradient-to-br from-[#EAE6F9] to-white border-4 border-white transition-transform duration-500 hover:scale-[1.02]">
+        
+        {/* Dynamic Glowing Border while speaking/generating */}
+        <div className={`absolute inset-0 rounded-full z-20 pointer-events-none transition-opacity duration-300 ${isPlaying || isGenerating ? "opacity-100 ring-4 ring-[#8B5CF6] animate-pulse" : "opacity-0"}`} />
 
-        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-          {['name', 'age', 'gender', 'phone', 'date', 'time', 'reason'].map((field) => (
-            <div key={field} className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700 capitalize">
-                {field}
-              </label>
-              <div className="relative">
-                <input
-                  type={field === 'date' ? 'date' : field === 'time' ? 'time' : 'text'}
-                  value={formData[field]}
-                  onChange={(e) => setFormData(prev => ({ ...prev, [field]: e.target.value }))}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                  placeholder={`Enter ${field}...`}
-                />
-                <button
-                  onClick={() => handleVoiceInput(field)}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-colors ${activeField === field && isListening
-                    ? 'bg-red-100 text-red-600 animate-pulse'
-                    : 'hover:bg-gray-100 text-gray-400 hover:text-indigo-600'
-                    }`}
-                  title="Speak to fill"
-                >
-                  <Mic className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          poster={DEFAULT_AVATAR_POSTER}
+          className="absolute inset-0 w-full h-full object-cover z-10"
+          autoPlay
+          playsInline
+          onPlay={() => setIsPlaying(true)}
+          onEnded={() => setIsPlaying(false)}
+          onPause={() => setIsPlaying(false)}
+        />
+        
+        {/* Overlays */}
+        {isGenerating && (
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-md z-30 flex flex-col items-center justify-center text-white p-4 text-center rounded-full">
+            <Loader2 className="w-8 h-8 animate-spin mb-2 text-[#DDD6FE]" />
+            <p className="text-[10px] font-bold tracking-wider uppercase animate-pulse">{LANG[lang].generatingVideo}</p>
+          </div>
+        )}
+      </div>
 
-        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onSubmit(formData)}
-            className="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 shadow-sm hover:shadow-md transition-all"
-          >
-            Confirm Booking
-          </button>
+      <div className="text-center mt-6 w-full">
+        <h3 className="text-xl font-bold text-[#1E293B] tracking-tight">Nabha AI</h3>
+        <p className="text-sm text-[#64748B] mt-0.5 font-medium">Ready to assist</p>
+        
+        <div className="flex justify-center mt-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-full shadow-sm">
+            <span className={`w-2 h-2 rounded-full ${isGenerating ? "bg-[#F59E0B] animate-pulse" : isPlaying ? "bg-[#10B981] animate-pulse" : isThinking ? "bg-[#8B5CF6] animate-pulse" : "bg-[#10B981]"}`} />
+            <span className="text-[10px] text-[#475569] font-bold tracking-widest uppercase">
+              {isGenerating ? "Processing" : isPlaying ? "Speaking" : isThinking ? "Listening" : "Online"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {isPlaying && (
+        <div className="mt-5 flex gap-1 items-center justify-center h-8 overflow-hidden">
+            {[...Array(9)].map((_, i) => (
+              <div
+                key={i}
+                className="w-1.5 rounded-full bg-gradient-to-t from-[#8B5CF6] to-[#A78BFA] origin-bottom"
+                style={{
+                  height: '100%',
+                  animation: `soundWave 1s ease-in-out infinite`,
+                  animationDelay: `${i * 0.1}s`,
+                }}
+              />
+            ))}
+        </div>
+      )}
+
+      {/* Feature tags (Pills) */}
+      <div className="mt-auto flex flex-wrap justify-center gap-2 px-2 w-full pt-6 border-t border-[#F1F5F9]">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F3E8FF] text-[#7E22CE] rounded-full text-xs font-semibold shadow-sm transition-transform hover:scale-105 cursor-default">
+          <Mic className="w-3.5 h-3.5" /> Voice AI
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E0E7FF] text-[#4338CA] rounded-full text-xs font-semibold shadow-sm transition-transform hover:scale-105 cursor-default">
+          <Globe className="w-3.5 h-3.5" /> Multi-lang
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ECFDF5] text-[#047857] rounded-full text-xs font-semibold shadow-sm transition-transform hover:scale-105 cursor-default">
+          <PhoneCall className="w-3.5 h-3.5" /> Real Doctors
         </div>
       </div>
     </div>
   );
 };
 
-const AgenticSymptomChecker = () => {
-  const navigate = useNavigate();
-  const chatBoxRef = useRef(null);
+/* ─── Structured Response Cards ────────────────────────────────────────────── */
+const ConditionCard = ({ condition }) => (
+  <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-[#F1F5F9] shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-md transition-all duration-300 hover:border-[#E2E8F0]">
+    <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center flex-shrink-0">
+      <Heart className="w-5 h-5 text-[#3B82F6]" />
+    </div>
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <span className="font-bold text-[#1E293B] text-sm">{condition.name}</span>
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${condition.probability?.toLowerCase() === 'high' ? 'bg-[#FEE2E2] text-[#DC2626]' : condition.probability?.toLowerCase() === 'medium' ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-[#DBEAFE] text-[#2563EB]'}`}>
+          {condition.probability} PROBABILITY
+        </span>
+      </div>
+      {condition.description && (
+        <p className="text-xs text-[#64748B] mt-2 leading-relaxed">{condition.description}</p>
+      )}
+    </div>
+  </div>
+);
 
-  // State
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [isListening, setIsListening] = useState(false);
-  const [agentState, setAgentState] = useState('idle');
-  const [currentLanguage, setCurrentLanguage] = useState('en');
-  const [showLanguageSelector, setShowLanguageSelector] = useState(true);
-  const [recognition, setRecognition] = useState(null);
-  const [expandedThoughts, setExpandedThoughts] = useState({});
-
-  // Appointment Modal State
-  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
-  const [appointmentData, setAppointmentData] = useState({});
-
-  // Initialize Language and Chat History
-  useEffect(() => {
-    const initialize = async () => {
-      // 1. Load Language
-      const savedLang = localStorage.getItem('healthAgentLanguage');
-      if (savedLang && LANGUAGES[savedLang]) {
-        setCurrentLanguage(savedLang);
-        setShowLanguageSelector(false);
-      }
-
-      // 2. Load Chat History
-      const history = await ChatStorageService.loadChat();
-      if (history && history.length > 0) {
-        setMessages(history);
-      } else {
-        // Initial welcome if no history
-        const lang = savedLang || 'en';
-        setMessages([{
-          type: 'agent',
-          content: {
-            text: LANGUAGES[lang].welcomeMessage,
-            actions: !savedLang ? [
-              { label: "English", type: "language", value: "en" },
-              { label: "हिंदी", type: "language", value: "hi" },
-              { label: "ਪੰਜਾਬੀ", type: "language", value: "pa" }
-            ] : []
-          },
-          timestamp: new Date()
-        }]);
-      }
-    };
-
-    initialize();
-    setupSpeechRecognition();
-  }, []);
-
-  // Save Chat History on Update
-  useEffect(() => {
-    if (messages.length > 0) {
-      ChatStorageService.saveChat(messages);
-    }
-  }, [messages]);
-
-  // Scroll to bottom
-  useEffect(() => {
-    if (chatBoxRef.current) {
-      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-    }
-  }, [messages, agentState]);
-
-  const setupSpeechRecognition = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-
-      recognitionInstance.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setIsListening(false);
-      };
-
-      recognitionInstance.onend = () => setIsListening(false);
-      setRecognition(recognitionInstance);
-    }
-  };
-
-  const toggleListening = () => {
-    if (recognition) {
-      if (isListening) {
-        recognition.stop();
-      } else {
-        recognition.lang = LANGUAGES[currentLanguage].speechRecognition;
-        recognition.start();
-        setIsListening(true);
-      }
-    }
-  };
-
-  const addMessage = (content, type, extra = {}) => {
-    setMessages(prev => [...prev, {
-      type,
-      content: typeof content === 'string' ? { text: content } : content,
-      timestamp: new Date(),
-      ...extra
-    }]);
-  };
-
-  const handleLanguageSelect = (langCode) => {
-    setCurrentLanguage(langCode);
-    localStorage.setItem('healthAgentLanguage', langCode);
-    setShowLanguageSelector(false);
-
-    // Clear previous messages and show welcome in new language
-    // Note: We might want to keep history but just change interface language?
-    // For now, let's reset to show the welcome message in new language
-    setMessages([]);
-    addMessage(LANGUAGES[langCode].welcomeMessage, 'agent');
-  };
-
-  const handleClearChat = async () => {
-    if (window.confirm("Are you sure you want to clear the chat history?")) {
-      await ChatStorageService.clearChat();
-      setMessages([{
-        type: 'agent',
-        content: {
-          text: LANGUAGES[currentLanguage].welcomeMessage
-        },
-        timestamp: new Date()
-      }]);
-    }
-  };
-
-  const handleAppointmentSubmit = async (data) => {
-    try {
-      const response = await fetch(`${BACKEND_CONFIG.API_BASE_URL}/appointments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setShowAppointmentModal(false);
-
-        const smsStatus = result.data.smsSent ? "✅ SMS Sent Successfully" : "⚠️ SMS Failed to Send";
-
-        addMessage({
-          tool: { label: 'book_appointment' },
-          status: 'completed',
-          result: `Appointment booked! ID: ${result.data.id}. ${smsStatus}`
-        }, 'tool_execution');
-
-        addMessage(`Great! I've booked your appointment with Dr. Sharma for ${data.date} at ${data.time}. \n\n${smsStatus}`, 'agent');
-      } else {
-        alert(result.message || "Failed to book appointment");
-      }
-    } catch (error) {
-      console.error("Booking Error:", error);
-      alert("Failed to connect to server");
-    }
-  };
-
-  const processUserInput = async () => {
-    if (!input.trim()) return;
-
-    const userText = input;
-    setInput("");
-    addMessage(userText, 'user');
-    setAgentState('thinking');
-
-    try {
-      // 1. Construct Prompt
-      const prompt = `
-        You are an advanced AI Health Agent.
-        User Input: "${userText}"
-        Current Language: ${currentLanguage}
-        
-        IMPORTANT: 
-        - You are a REAL application, NOT a demo. 
-        - Real SMS messages are sent by the backend system automatically.
-        - NEVER say "Demo Mode" or "SMS would be sent". 
-        - If the user asks about SMS, confirm that a REAL SMS will be sent to their phone.
-        
-        Analyze the input and provide a JSON response with the following structure:
-        {
-          "thought": "Internal reasoning process...",
-          "plan": [
-            {"text": "Step 1 description", "status": "pending"},
-            {"text": "Step 2 description", "status": "pending"}
-          ],
-          "actions": [
-            {"tool": "tool_name", "params": { ... }} 
-          ],
-          "response": "User facing response in ${currentLanguage}"
-        }
-        
-        Available Tools:
-        - search_symptoms: Analyze symptoms
-        - find_specialist: Find doctors (params: specialty)
-        - emergency_protocol: For severe/urgent cases
-        - book_appointment: Schedule visit (params: reason, date, time)
-        - health_tip: General advice
-        
-        If emergency, set tool to 'emergency_protocol'.
-      `;
-
-      // 2. Call Gemini API
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
-        }
-      );
-
-      const data = await response.json();
-      const aiResponseText = data.candidates[0].content.parts[0].text;
-
-      // Parse JSON
-      const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
-      const aiData = jsonMatch ? JSON.parse(jsonMatch[0]) : {
-        thought: "Processing response...",
-        plan: [],
-        actions: [],
-        response: aiResponseText
-      };
-
-      // 3. Visualize Thinking & Planning
-      setAgentState('planning');
-      addMessage({
-        thought: aiData.thought,
-        plan: aiData.plan
-      }, 'agent_internal');
-
-      // 4. Execute Tools
-      if (aiData.actions && aiData.actions.length > 0) {
-        setAgentState('executing');
-        for (const action of aiData.actions) {
-          // Show tool execution start
-          addMessage({
-            tool: { label: action.tool },
-            status: 'running'
-          }, 'tool_execution');
-
-          // Simulate execution delay
-          await new Promise(r => setTimeout(r, 1500));
-
-          // Handle Tool Logic
-          let result = "Done";
-          if (action.tool === 'emergency_protocol') {
-            result = "Emergency Services Contacted";
-          } else if (action.tool === 'find_specialist') {
-            try {
-              const specialty = action.params.specialty || '';
-              const response = await fetch(`${BACKEND_CONFIG.API_BASE_URL}/doctors?specialty=${specialty}`);
-              const data = await response.json();
-
-              if (data.success && data.count > 0) {
-                result = `Found ${data.count} ${specialty || 'specialists'} nearby`;
-                // We could pass data.data to the doctors page via state if supported
-                navigate('/doctors', { state: { doctors: data.data } });
-              } else {
-                result = `No ${specialty} found nearby.`;
-              }
-            } catch (error) {
-              console.error("Find Doctor Error:", error);
-              result = "Error searching for doctors";
-            }
-          } else if (action.tool === 'book_appointment') {
-            setAppointmentData(action.params || {});
-            setShowAppointmentModal(true);
-            result = "Opening appointment form...";
-          }
-
-          // Show tool execution complete
-          setMessages(prev => {
-            const newMsgs = [...prev];
-            const lastMsg = newMsgs[newMsgs.length - 1];
-            if (lastMsg.type === 'tool_execution') {
-              lastMsg.content.status = 'completed';
-              lastMsg.content.result = result;
-            }
-            return newMsgs;
-          });
-        }
-      }
-
-      // 5. Final Response
-      setAgentState('responding');
-      addMessage(aiData.response, 'agent');
-      setAgentState('idle');
-
-    } catch (error) {
-      console.error("Agent Error:", error);
-      addMessage("I apologize, I encountered an error processing your request.", 'agent');
-      setAgentState('idle');
-    }
-  };
-
-  const toggleThought = (idx) => {
-    setExpandedThoughts(prev => ({
-      ...prev,
-      [idx]: !prev[idx]
-    }));
-  };
-
+const MedicineCard = ({ medicine, onAddToCart, lang }) => {
+  const [added, setAdded] = useState(false);
+  const handleAdd = () => { onAddToCart(medicine); setAdded(true); setTimeout(() => setAdded(false), 2500); };
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50 flex items-center justify-center p-4 md:p-6" >
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] border border-gray-100">
-
-        {/* Header */}
-        <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                <Stethoscope className="w-6 h-6" />
-              </div>
-              <span className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-white rounded-full ${agentState === 'idle' ? 'bg-green-500' : 'bg-indigo-500 animate-pulse'}`}></span>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Nabha AI Health Agent</h1>
-              <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
-                {agentState === 'idle' ? 'Ready to assist' :
-                  agentState === 'thinking' ? 'Analyzing symptoms...' :
-                    agentState === 'planning' ? 'Formulating plan...' :
-                      agentState === 'executing' ? 'Connecting with services...' : 'Typing response...'}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleClearChat}
-              className="p-2.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all duration-200"
-              title="Clear Chat History"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-            <div className="h-8 w-px bg-gray-200 mx-1"></div>
-            <button
-              onClick={() => setShowLanguageSelector(!showLanguageSelector)}
-              className={`p-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 ${showLanguageSelector ? 'bg-indigo-50 text-indigo-600' : 'text-gray-500 hover:bg-gray-50'}`}
-              title="Change Language"
-            >
-              <div className="w-5 h-5">🌐</div>
-              <span className="text-sm font-medium uppercase">{currentLanguage}</span>
-            </button>
-          </div>
+    <div className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-[#F1F5F9] shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-md transition-all duration-300 hover:border-[#E2E8F0]">
+      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#10B981] to-[#059669] flex items-center justify-center flex-shrink-0 shadow-sm">
+        <Pill className="w-6 h-6 text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-[#1E293B] text-sm truncate">{medicine.name}</p>
+        {medicine.salt && <p className="text-xs text-[#64748B] truncate mt-0.5">{medicine.salt}</p>}
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="text-sm font-extrabold text-[#059669]">₹{medicine.price}</span>
+          {medicine.dosage && <span className="text-xs font-medium text-[#94A3B8] px-2 py-0.5 bg-[#F8FAFC] rounded-md">{medicine.dosage}</span>}
         </div>
+      </div>
+      <button onClick={handleAdd} className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 shadow-sm hover:-translate-y-0.5 ${added ? "bg-[#D1FAE5] text-[#059669] ring-2 ring-[#059669] ring-offset-1" : "bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white hover:shadow-lg hover:shadow-purple-200"}`}>
+        {added ? <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4" />{LANG[lang].addedCart}</span> : <span className="flex items-center gap-1.5"><ShoppingCart className="w-4 h-4" />{LANG[lang].addCart}</span>}
+      </button>
+    </div>
+  );
+};
 
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-gray-50/30 scroll-smooth" ref={chatBoxRef}>
-          {messages.map((msg, idx) => (
-            <div key={idx} className={`flex flex-col ${msg.type === 'user' ? 'items-end' : 'items-start'}`}>
+const DoctorCard = ({ doctor }) => (
+  <div className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-[#F1F5F9] shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-md transition-all duration-300 hover:border-[#E2E8F0]">
+    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-4 ring-[#F3E8FF]">
+      {doctor.image ? <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gradient-to-br from-[#A78BFA] to-[#8B5CF6] flex items-center justify-center"><UserCheck className="w-5 h-5 text-white" /></div>}
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="font-bold text-[#1E293B] text-sm truncate">Dr. {doctor.name}</p>
+      <p className="text-[10px] uppercase tracking-widest text-[#7C3AED] font-bold mt-0.5">{doctor.specialty}</p>
+      <div className="flex items-center gap-3 mt-1.5">
+        {doctor.experience && <span className="flex items-center gap-1 text-xs font-medium text-[#64748B]"><Clock className="w-3.5 h-3.5 text-[#94A3B8]" />{doctor.experience}</span>}
+        {doctor.location && <span className="flex items-center gap-1 text-xs font-medium text-[#64748B] truncate"><MapPin className="w-3.5 h-3.5 text-[#94A3B8]" />{doctor.location}</span>}
+      </div>
+    </div>
+  </div>
+);
 
-              {/* User Message */}
-              {msg.type === 'user' && (
-                <div className="max-w-[80%] bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl rounded-tr-sm px-6 py-3.5 shadow-lg shadow-indigo-200">
-                  <p className="leading-relaxed">{msg.content?.text}</p>
-                </div>
-              )}
-
-              {/* Agent Message */}
-              {msg.type === 'agent' && (
-                <div className="flex gap-4 max-w-[85%]">
-                  <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
-                    <Stethoscope className="w-6 h-6 text-indigo-600" />
-                  </div>
-                  <div className="space-y-2 w-full">
-                    <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-6 py-5 shadow-sm text-gray-800 leading-relaxed">
-                      <div className="whitespace-pre-wrap">{msg.content?.text}</div>
-
-                      {/* Action Buttons */}
-                      {msg.content?.actions && (
-                        <div className="mt-5 flex flex-wrap gap-2.5">
-                          {msg.content.actions.map((action, i) => (
-                            <button
-                              key={i}
-                              onClick={() => action.type === 'language' ? handleLanguageSelect(action.value) : null}
-                              className="px-4 py-2 bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-lg hover:bg-indigo-100 hover:scale-105 active:scale-95 transition-all border border-indigo-100"
-                            >
-                              {action.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Internal Thought/Plan */}
-              {msg.type === 'agent_internal' && (
-                <div className="w-full max-w-2xl mx-auto mt-4 px-4">
-                  <AgentThought
-                    thought={msg.content?.thought}
-                    isExpanded={expandedThoughts[idx]}
-                    onToggle={() => toggleThought(idx)}
-                  />
-                  {msg.content?.plan && <AgentPlan plan={msg.content.plan} />}
-                </div>
-              )}
-
-              {/* Tool Execution */}
-              {msg.type === 'tool_execution' && (
-                <div className="w-full max-w-2xl mx-auto mt-2 px-4">
-                  <ToolExecution
-                    tool={msg.content?.tool}
-                    status={msg.content?.status}
-                    result={msg.content?.result}
-                  />
-                </div>
-              )}
-
-            </div>
-          ))}
-
-          {agentState === 'thinking' && (
-            <div className="flex justify-start w-full max-w-2xl mx-auto pl-14">
-              <div className="flex items-center gap-3 text-gray-500 bg-white px-5 py-3 rounded-2xl shadow-sm border border-gray-100">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-                </div>
-                <span className="text-sm font-medium">Thinking...</span>
-              </div>
-            </div>
-          )}
+const Section = ({ icon: Icon, title, children, defaultOpen = true }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className={`rounded-2xl border border-[#E2E8F0] overflow-hidden bg-white shadow-sm transition-all duration-300 ${open ? 'pb-2' : ''}`}>
+      <button onClick={() => setOpen(o => !o)} className={`w-full flex items-center justify-between px-5 py-4 bg-[#F8FAFC] hover:bg-[#F1F5F9] transition-colors`}>
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 bg-white rounded-lg shadow-sm border border-[#E2E8F0]"><Icon className="w-4 h-4 text-[#64748B]" /></div>
+          <span className="text-sm font-bold text-[#334155]">{title}</span>
         </div>
+        {open ? <ChevronUp className="w-5 h-5 text-[#94A3B8]" /> : <ChevronDown className="w-5 h-5 text-[#94A3B8]" />}
+      </button>
+      {open && <div className="p-4 space-y-3 bg-white animate-in slide-in-from-top-2 duration-300">{children}</div>}
+    </div>
+  );
+};
 
-        {/* Input Area */}
-        <div className="bg-white border-t border-gray-100 p-4 md:p-6">
-          <div className="max-w-4xl mx-auto relative flex items-end gap-3">
-            <button
-              onClick={toggleListening}
-              className={`p-3.5 rounded-xl transition-all duration-200 flex-shrink-0 ${isListening
-                ? 'bg-red-50 text-red-500 ring-2 ring-red-100 animate-pulse'
-                : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-                }`}
-            >
-              {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-            </button>
+const TypingIndicator = ({ text }) => (
+  <div className="flex gap-4 items-end max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#A78BFA] to-[#8B5CF6] flex items-center justify-center shadow-md flex-shrink-0"><Stethoscope className="w-5 h-5 text-white" /></div>
+    <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[24px] rounded-bl-sm px-5 py-4 shadow-sm flex items-center gap-3 relative">
+      <div className="flex gap-1.5">
+        <span className="w-2.5 h-2.5 bg-[#A78BFA] rounded-full animate-bounce [animation-delay:0ms]" />
+        <span className="w-2.5 h-2.5 bg-[#A78BFA] rounded-full animate-bounce [animation-delay:150ms]" />
+        <span className="w-2.5 h-2.5 bg-[#A78BFA] rounded-full animate-bounce [animation-delay:300ms]" />
+      </div>
+      <span className="text-xs text-[#64748B] font-bold tracking-wide">{text}</span>
+    </div>
+  </div>
+);
 
-            <div className="flex-1 relative bg-gray-50 rounded-2xl border border-gray-200 focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-50/50 transition-all duration-200">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    processUserInput();
-                  }
-                }}
-                placeholder={LANGUAGES[currentLanguage].placeholder}
-                className="w-full bg-transparent border-none rounded-2xl pl-4 pr-14 py-3.5 focus:ring-0 resize-none min-h-[56px] max-h-32 text-gray-700 placeholder-gray-400"
-                rows={1}
-              />
-              <button
-                onClick={processUserInput}
-                disabled={!input.trim() || agentState !== 'idle'}
-                className="absolute right-2 bottom-2 p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md active:scale-95"
-              >
-                <Send className="w-5 h-5" />
+const MessageBubble = ({ msg, lang, onAddToCart, onSpeak }) => {
+  if (msg.type === "user") {
+    return (
+      <div className="flex justify-end animate-in fade-in slide-in-from-right-4 duration-500">
+        <div className="max-w-[75%] bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white rounded-[24px] rounded-br-sm px-6 py-4 shadow-[0_4px_20px_rgb(139,92,246,0.25)] hover:shadow-[0_6px_25px_rgb(139,92,246,0.3)] transition-shadow">
+          <p className="leading-relaxed text-sm font-medium tracking-wide text-white">{msg.text}</p>
+        </div>
+      </div>
+    );
+  }
+  if (msg.type === "agent") {
+    const sd = msg.structuredData;
+    return (
+      <div className="flex gap-4 items-end max-w-[90%] w-full animate-in fade-in slide-in-from-left-4 duration-500">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#A78BFA] to-[#8B5CF6] flex items-center justify-center shadow-md flex-shrink-0 relative">
+          <Stethoscope className="w-5 h-5 text-white" />
+          <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#10B981] border-2 border-white rounded-full"></div>
+        </div>
+        <div className="flex-1 space-y-4 min-w-0">
+          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[24px] rounded-bl-sm px-6 py-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden w-full">
+            <p className="text-[#334155] leading-relaxed text-[15px] whitespace-pre-wrap font-medium">{msg.text}</p>
+            {sd?.urgencyLevel && (
+              <div className={`mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border ${sd.urgencyLevel === 'high' ? 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]' : sd.urgencyLevel === 'medium' ? 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]' : 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]'}`}>
+                <Zap className="w-3.5 h-3.5" />URGENCY: {sd.urgencyLevel.toUpperCase()}
+              </div>
+            )}
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#E2E8F0]">
+              <button onClick={() => onSpeak(msg.text)} className="group flex items-center justify-center w-10 h-10 rounded-full bg-white border border-[#E2E8F0] shadow-sm hover:border-[#8B5CF6] hover:bg-[#F3E8FF] transition-all duration-300 relative">
+                <Volume2 className="w-4 h-4 text-[#64748B] group-hover:text-[#8B5CF6]" />
+                <span className="absolute -top-10 scale-0 group-hover:scale-100 transition-transform bg-[#1E293B] text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap font-bold">Listen</span>
               </button>
             </div>
           </div>
-          <div className="text-center mt-3">
-            <p className="text-xs text-gray-400 font-medium">
-              AI Health Agent can make mistakes. Please consult a real doctor for emergencies.
-            </p>
-          </div>
+          {sd?.requiresUrgentCare && (
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] shadow-sm">
+              <AlertCircle className="w-8 h-8 text-[#DC2626] animate-pulse flex-shrink-0" />
+              <p className="text-sm font-bold text-[#991B1B] leading-snug">{LANG[lang].urgentAlert}</p>
+            </div>
+          )}
+          {sd?.possibleConditions?.length > 0 && <Section icon={Heart} title={LANG[lang].sections.conditions} defaultOpen={true}>{sd.possibleConditions.map((c, i) => <ConditionCard key={i} condition={c} />)}</Section>}
+          {sd?.medicines?.length > 0 && <Section icon={Pill} title={LANG[lang].sections.medicines} defaultOpen={true}>{sd.medicines.map((m, i) => <MedicineCard key={i} medicine={m} onAddToCart={onAddToCart} lang={lang} />)}</Section>}
+          {sd?.doctors?.length > 0 && <Section icon={UserCheck} title={LANG[lang].sections.doctors} defaultOpen={true}>{sd.doctors.map((d, i) => <DoctorCard key={i} doctor={d} />)}</Section>}
+          {sd?.precautions?.length > 0 && <Section icon={Shield} title={LANG[lang].sections.precautions} defaultOpen={false}>
+            <ul className="space-y-3 p-1">{sd.precautions.map((p, i) => <li key={i} className="flex items-start gap-3 text-sm text-[#475569] font-medium"><CheckCircle className="w-5 h-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />{p}</li>)}</ul>
+          </Section>}
         </div>
       </div>
-
-      {/* Appointment Modal */}
-      <AppointmentModal
-        isOpen={showAppointmentModal}
-        onClose={() => setShowAppointmentModal(false)}
-        onSubmit={handleAppointmentSubmit}
-        initialData={appointmentData}
-      />
-    </div >
-  );
+    );
+  }
+  if (msg.type === "error") {
+    return (
+      <div className="flex gap-4 items-start animate-in fade-in slide-in-from-left-4 duration-300">
+        <div className="w-10 h-10 rounded-full bg-[#FEE2E2] flex items-center justify-center flex-shrink-0"><AlertCircle className="w-5 h-5 text-[#EF4444]" /></div>
+        <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-[24px] rounded-bl-sm px-6 py-4 shadow-sm flex items-center justify-between w-full max-w-[80%]">
+          <p className="text-sm text-[#991B1B] font-bold">{msg.text}</p>
+          {msg.onRetry && <button onClick={msg.onRetry} className="ml-4 px-4 py-1.5 bg-[#EF4444] text-white rounded-lg text-xs font-bold hover:bg-[#DC2626] transition-colors shadow-sm">Try Again</button>}
+        </div>
+      </div>
+    );
+  }
+  return null;
 };
 
-export default AgenticSymptomChecker;
+/* ─── Main Component ───────────────────────────────────────────────────────── */
+export default function SymptomChecker() {
+  const { addToCart } = useCart();
+  const chatRef   = useRef(null);
+  const synthRef  = useRef(window.speechSynthesis);
+  const recogRef  = useRef(null);
+
+  const [messages,    setMessages]    = useState([]);
+  const [input,       setInput]       = useState("");
+  const [isThinking,  setIsThinking]  = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [language,    setLanguage]    = useState("en");
+  const [avatarVideoUrl, setAvatarVideoUrl] = useState(null);
+  
+  const langConf = LANG[language];
+  const historyRef = useRef([]);
+
+  /* ── Initial welcome ── */
+  useEffect(() => {
+    const welcomes = {
+      en: "Hello! I'm Nabha AI. I can analyze your symptoms instantly and even speak with you. Describe how you're feeling today!",
+      hi: "नमस्ते! मैं Nabha AI हूँ। आपके लक्षणों का विश्लेषण कर सकता हूँ और आपसे बात भी कर सकता हूँ। बताएं आप कैसा महसूस कर रहे हैं?",
+      pa: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ Nabha AI ਹਾਂ। ਮੈਂ ਤੁਹਾਡੇ ਲੱਛਣਾਂ ਦਾ ਵਿਸ਼ਲੇਸ਼ਣ ਕਰ ਸਕਦਾ ਹਾਂ। ਦੱਸੋ ਤੁਸੀਂ ਕਿਵੇਂ ਮਹਿਸੂਸ ਕਰ ਰਹੇ ਹੋ?"
+    };
+    setMessages([{ type: "agent", text: welcomes[language], structuredData: null, timestamp: Date.now() }]);
+  }, [language]);
+
+  /* ── Auto-scroll ── */
+  useEffect(() => {
+    if (chatRef.current) chatRef.current.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, isThinking]);
+
+  /* ── Speech Recognition setup ── */
+  useEffect(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    const r = new SR();
+    r.continuous = false;
+    r.interimResults = false;
+    r.onresult = (e) => { setInput(e.results[0][0].transcript); setIsListening(false); };
+    r.onend = () => setIsListening(false);
+    r.onerror = () => setIsListening(false);
+    recogRef.current = r;
+  }, []);
+
+  const toggleListening = () => {
+    if (!recogRef.current) return;
+    if (isListening) { recogRef.current.stop(); setIsListening(false); } 
+    else { recogRef.current.lang = langConf.speechCode; recogRef.current.start(); setIsListening(true); }
+  };
+
+  /* ── Fallback Browser TTS ── */
+  const speakFallback = useCallback((text) => {
+    if (!text) return;
+    synthRef.current.cancel();
+    const u = new SpeechSynthesisUtterance(text.slice(0, 500));
+    u.lang = langConf.speechCode;
+    synthRef.current.speak(u);
+  }, [langConf.speechCode]);
+
+  /* ── Add to cart ── */
+  const handleAddToCart = useCallback((m) => {
+    addToCart({ id: m._id, _id: m._id, name: m.name, price: m.price, packSize: m.dosage || "", type: m.type || "Medicine" }, 1, "symptom-checker");
+  }, [addToCart]);
+
+  /* ── Fetch Avatar Video via D-ID ── */
+  const generateAvatarTalk = async (textToSpeak) => {
+    try {
+      setIsGeneratingVideo(true);
+      const res = await fetch(`${API_BASE}/api/ai/avatar-response`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: textToSpeak, language })
+      });
+      const data = await res.json();
+      if (data.success && data.videoUrl) {
+         setAvatarVideoUrl(data.videoUrl); // Will auto-play in the AIAvatar component
+      } else {
+         console.warn("Avatar video generation failed, falling back to TTS");
+         speakFallback(textToSpeak);
+      }
+    } catch (err) {
+      console.error("Avatar API Error:", err);
+      speakFallback(textToSpeak);
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  };
+
+  /* ── Send message (Text generation + Avatar call) ── */
+  const sendMessage = useCallback(async (overrideText) => {
+    const text = (overrideText || input).trim();
+    if (!text || isThinking) return;
+
+    setInput("");
+    setMessages(prev => [...prev, { type: "user", text, timestamp: Date.now() }]);
+    setIsThinking(true);
+    setAvatarVideoUrl(null); // Clear previous video
+
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/symptom-check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, language, conversationHistory: historyRef.current.slice(-6) })
+      });
+
+      if (!res.ok) throw new Error("Server error");
+      const data = await res.json();
+      if (!data.success) throw new Error("AI failed");
+
+      // 1. Show Text UI instantly
+      setMessages(prev => [...prev, { type: "agent", text: data.text, structuredData: data.structuredData, timestamp: Date.now() }]);
+      historyRef.current.push({ type: "user", text }, { type: "agent", text: data.text });
+
+      // 2. Trigger Avatar Video Processing in background
+      if (data.text) {
+        generateAvatarTalk(data.text);
+      }
+
+    } catch (err) {
+      setMessages(prev => [...prev, { type: "error", text: "Connection failed. Make sure your local server is running.", onRetry: () => sendMessage(text), timestamp: Date.now() }]);
+    } finally {
+      setIsThinking(false);
+    }
+  }, [input, language, isThinking, speakFallback]);
+
+  return (
+    <>
+      <style>{`
+        @keyframes soundWave { 0%,100%{transform:scaleY(0.2)} 50%{transform:scaleY(1)} }
+        body { background-color: #F8FAFC; }
+      `}</style>
+      <div className="min-h-[calc(100vh-80px)] bg-[#F8FAFC] flex flex-col items-center p-4 md:p-8 font-sans">
+        <div className="w-full max-w-[1500px] flex-1 flex flex-col lg:flex-row gap-8 min-h-0">
+          
+          {/* LEFT: Text Chat Container (70%) */}
+          <div className="flex-[7] bg-white rounded-[32px] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-[#F1F5F9] flex flex-col overflow-hidden min-h-[600px] relative">
+            
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-[#F1F5F9] flex justify-between items-center bg-white/95 backdrop-blur-xl z-20 sticky top-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#7C3AED] flex items-center justify-center shadow-[0_4px_20px_rgb(139,92,246,0.3)] border border-[#A78BFA]">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-extrabold text-[#1E293B] tracking-tight">Symptom Checker</h1>
+                  <p className="text-sm text-[#8B5CF6] font-bold tracking-wide mt-0.5">{isThinking ? langConf.thinking : "Powered by Nabha AI"}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 p-1.5 bg-[#F8FAFC] rounded-[16px] border border-[#E2E8F0] shadow-inner">
+                {Object.entries(LANG).map(([code, l]) => (
+                  <button 
+                    key={code} 
+                    onClick={() => { setLanguage(code); synthRef.current.cancel(); setAvatarVideoUrl(null); }} 
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${language === code ? "bg-[#8B5CF6] text-white shadow-md shadow-purple-200 translate-y-[1px]" : "bg-transparent text-[#64748B] hover:text-[#1E293B] hover:bg-[#F1F5F9]"}`}
+                  >
+                    {code.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Chat Area */}
+            <div ref={chatRef} className="flex-1 overflow-y-auto px-6 py-8 space-y-8 bg-[#FAFAFA]" style={{ scrollBehavior: 'smooth' }}>
+              {messages.map((msg, i) => (
+                <div key={i}><MessageBubble msg={msg} lang={language} onAddToCart={handleAddToCart} onSpeak={speakFallback} /></div>
+              ))}
+              {isThinking && <TypingIndicator text={langConf.thinking} />}
+            </div>
+
+            {/* Sticky Input Area */}
+            <div className="p-6 bg-white border-t border-[#F1F5F9] z-20 shadow-[0_-10px_40px_rgb(0,0,0,0.02)]">
+              {isListening && <div className="flex items-center gap-2 mb-3 px-4 py-2 bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] text-xs font-bold rounded-xl w-max animate-pulse shadow-sm"><span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" /> {langConf.listenLabel}</div>}
+              <div className="flex gap-3 relative group">
+                <button 
+                  onClick={toggleListening} 
+                  className={`absolute left-2 top-1/2 -translate-y-1/2 p-3.5 rounded-2xl transition-all duration-300 z-10 ${isListening ? "bg-[#FEF2F2] text-[#DC2626] scale-105" : "bg-transparent text-[#94A3B8] hover:bg-[#F3E8FF] hover:text-[#8B5CF6]"}`}
+                >
+                  {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                </button>
+                <input
+                  type="text"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && sendMessage()}
+                  placeholder={langConf.placeholder}
+                  className="w-full pl-16 pr-20 py-5 bg-[#F8FAFC] border-2 border-[#E2E8F0] rounded-[24px] focus:ring-4 focus:ring-[#EDE9FE] focus:border-[#A78BFA] focus:bg-white text-[15px] text-[#1E293B] font-medium transition-all duration-300 placeholder-[#94A3B8] shadow-inner"
+                />
+                <button 
+                  onClick={() => sendMessage()} 
+                  disabled={!input.trim() || isThinking} 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-3.5 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white rounded-2xl shadow-md hover:shadow-lg hover:shadow-purple-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 transition-all duration-300"
+                >
+                  <Send className="w-5 h-5 ml-0.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Avatar Panel (30%) */}
+          <div className="hidden lg:flex flex-[3] flex-col gap-6">
+            
+            {/* Avatar Card */}
+            <div className="bg-white rounded-[32px] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-[#F1F5F9] overflow-hidden flex flex-col items-center">
+              <div className="w-full h-24 bg-gradient-to-r from-[#F3E8FF] via-[#EAE6F9] to-[#F1F5F9]"></div>
+              <div className="w-full px-6 pb-8 -mt-16 relative z-10 flex flex-col items-center">
+                <AIAvatar
+                  videoUrl={avatarVideoUrl}
+                  isGenerating={isGeneratingVideo}
+                  isThinking={isThinking}
+                  lang={language}
+                />
+              </div>
+            </div>
+            
+            {/* Quick Symptoms Card */}
+            <div className="bg-white rounded-[32px] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-[#F1F5F9] p-7">
+              <h4 className="text-xs font-extrabold text-[#94A3B8] uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-[#F59E0B]" />
+                Quick Symptoms
+              </h4>
+              <div className="flex flex-wrap gap-2.5">
+                {["Fever & Chills", "Severe Headache", "Persistent Cough", "Stomach Pain"].map(s => (
+                  <button 
+                    key={s} 
+                    onClick={() => sendMessage(s)} 
+                    disabled={isThinking} 
+                    className="px-4 py-2 bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0] rounded-[16px] text-[13px] font-bold hover:bg-[#F3E8FF] hover:text-[#8B5CF6] hover:border-[#C4B5FD] transition-all duration-300 disabled:opacity-50 hover:-translate-y-0.5 hover:shadow-sm"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Disclaimer Mini Card */}
+            <div className="bg-[#FEF2F2] rounded-[24px] border border-[#FECACA] p-5 flex items-start gap-4">
+               <Shield className="w-6 h-6 text-[#DC2626] flex-shrink-0" />
+               <p className="text-xs text-[#991B1B] font-bold leading-relaxed">{langConf.disclaimer}</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </>
+  );
+}
