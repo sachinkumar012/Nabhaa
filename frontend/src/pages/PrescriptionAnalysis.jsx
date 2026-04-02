@@ -336,6 +336,11 @@ const PrescriptionAnalysis = () => {
 
   const handleFile = (selected) => {
     if (!selected) return;
+    // Client-side size check: warn if > 25MB
+    if (selected.size > 25 * 1024 * 1024) {
+      setError('Image is too large (max 25 MB). Please choose a smaller image or take a photo at lower resolution.');
+      return;
+    }
     setFile(selected); setPreviewUrl(URL.createObjectURL(selected));
     setResults(null); setError(''); setAnalysisStep(0);
   };
@@ -362,11 +367,36 @@ const PrescriptionAnalysis = () => {
     try {
       const response = await axios.post(`${API_BASE}/analyze`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 90000, // 90 seconds — mobile OCR (Gemini + Tesseract) can be slow on Render
+        onUploadProgress: (progressEvent) => {
+          // Show upload progress for large mobile images
+          const pct = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+          if (pct < 100) console.log(`[Upload] ${pct}% uploaded`);
+        },
       });
       setAnalysisStep(4);
       setTimeout(() => setResults(response.data), 400);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to analyze prescription. Please try a clearer image.');
+      // Extract the most useful error message
+      const responseData = err.response?.data;
+      const code = responseData?.code;
+      let userMessage = 'Failed to analyze prescription. Please try a clearer image.';
+
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        userMessage = 'Analysis timed out. Your connection may be slow — please try again or use a smaller image.';
+      } else if (code === 'FILE_TOO_LARGE') {
+        userMessage = 'Image is too large. Please take a photo at a lower resolution or compress it.';
+      } else if (code === 'UNSUPPORTED_FORMAT') {
+        userMessage = 'Image format not supported. Please save it as JPG or PNG and try again.';
+      } else if (code === 'AI_UNAVAILABLE') {
+        userMessage = 'AI service is temporarily unavailable. Please try again in a moment.';
+      } else if (code === 'UPLOAD_ERROR') {
+        userMessage = responseData?.message || 'Upload failed. Please try again.';
+      } else if (responseData?.message) {
+        userMessage = responseData.message;
+      }
+
+      setError(userMessage);
       setAnalysisStep(0);
     } finally {
       setIsAnalyzing(false);

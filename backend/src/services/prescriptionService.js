@@ -41,23 +41,19 @@ class PrescriptionService {
 
   // ══════════════════════════════════════════════════════════════════════════
   // LAYER 1 — Image Preprocessing
-  // Convert to grayscale, normalize contrast, sharpen for better OCR
+  // NOTE: Full mobile preprocessing (HEIC→JPEG, EXIF rotate, resize, compress)
+  // is now done in the controller via imageProcessor.js BEFORE calling this service.
+  // This method is kept as a lightweight identity pass-through for compatibility.
   // ══════════════════════════════════════════════════════════════════════════
   static async preprocessImage(buffer) {
-    try {
-      const sharp = require('sharp');
-      const processed = await sharp(buffer)
-        .grayscale()                   // Convert to grayscale
-        .normalize()                   // Stretch histogram (max contrast)
-        .sharpen({ sigma: 1.5 })       // Sharpen edges (helps handwriting)
-        .linear(1.3, -30)              // Contrast boost: multiply + brightness offset
-        .toBuffer();
-      console.log('[OCR] Image preprocessing complete');
-      return processed;
-    } catch (err) {
-      console.warn('[OCR] Preprocessing skipped (sharp error):', err.message);
-      return buffer; // Return original if sharp fails
-    }
+    // By the time we reach here, the controller has already:
+    //   1. Converted HEIC/HEIF → JPEG
+    //   2. Applied EXIF rotation
+    //   3. Resized to max 1200px
+    //   4. Normalized contrast + sharpened
+    // So we just return the buffer as-is.
+    console.log('[OCR] Image preprocessing: already done by controller (mobile-safe pipeline)');
+    return buffer;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -66,11 +62,13 @@ class PrescriptionService {
   // Fallback: Tesseract LSTM (--oem 3 --psm 6)
   // ══════════════════════════════════════════════════════════════════════════
   static async extractTextFromImage(imageBuffer, mimeType = 'image/jpeg') {
-    // First preprocess
-    const processedBuffer = await PrescriptionService.preprocessImage(imageBuffer);
+    // Preprocessing already done by controller (HEIC→JPEG, EXIF rotate, resize)
+    // We use the buffer directly
+    const processedBuffer = imageBuffer;
 
-    // Try Gemini Vision first
-    const geminiResult = await PrescriptionService._ocrWithGemini(processedBuffer, mimeType);
+    // Try Gemini Vision first — always send as image/jpeg since controller normalized it
+    const effectiveMime = 'image/jpeg';
+    const geminiResult = await PrescriptionService._ocrWithGemini(processedBuffer, effectiveMime);
     if (geminiResult && geminiResult.text && geminiResult.text.trim().length > 20) {
       console.log('[OCR] Gemini Vision succeeded');
       return { text: geminiResult.text, engine: 'gemini', confidence: geminiResult.confidence };
@@ -141,17 +139,22 @@ Return ONLY the raw extracted text. Nothing else.`;
     }
   }
 
-  /** Tesseract LSTM OCR — best-config for medical text */
+  /** Tesseract LSTM OCR — best-config for medical text (mobile-optimized) */
   static async _ocrWithTesseract(buffer) {
     const Tesseract = require('tesseract.js');
     try {
+      console.log(`[OCR] Tesseract: processing ${(buffer.length / 1024).toFixed(1)} KB buffer`);
       const { data } = await Tesseract.recognize(buffer, 'eng', {
         logger: () => {},
-        tessedit_ocr_engine_mode: '3',   // LSTM only (--oem 3)
-        tessedit_pageseg_mode: '6',       // Assume uniform block (--psm 6)
+        // OEM 1 = LSTM only (more accurate than OEM 3 for clean images)
+        tessedit_ocr_engine_mode: '1',
+        // PSM 4 = Assume a single column of text (better for prescriptions)
+        tessedit_pageseg_mode: '4',
         preserve_interword_spaces: '1',
+        // Whitelist characters commonly found in prescriptions
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,/()-+ ',
       });
-      console.log('[OCR] Tesseract confidence:', data.confidence);
+      console.log('[OCR] Tesseract confidence:', data.confidence, '| Text length:', data.text?.length);
       return data.text;
     } catch (err) {
       console.error('[OCR] Tesseract error:', err.message);
