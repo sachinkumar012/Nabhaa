@@ -62,6 +62,7 @@ app.get('/', (req, res) => {
 
 const doctorRoutes = require('./routes/doctorRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
+const insuranceRoutes = require('./routes/insuranceRoutes');
 const medicineRoutes = require('./routes/medicineRoutes');
 const abhaRoutes = require('./routes/abhaRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -71,6 +72,7 @@ const prescriptionRoutes = require('./routes/prescriptionRoutes');
 
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/insurance', insuranceRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/abha', abhaRoutes);
 app.use('/api/auth', authRoutes);

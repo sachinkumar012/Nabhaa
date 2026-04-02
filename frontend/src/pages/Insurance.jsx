@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Shield, CheckCircle, Heart, Users, Phone, ArrowRight, Star, Clock, FileText, IndianRupee } from 'lucide-react';
+import { Shield, CheckCircle, Heart, Users, Phone, ArrowRight, Star, Clock, FileText, X, Loader2, Download } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import PaymentService from '../services/PaymentService';
 
 const PLANS = [
   {
     id: 1,
     name: 'Basic Health',
-    price: '₹299/month',
+    price: 299,
     coverage: '₹3 Lakh',
     color: 'from-blue-500 to-blue-600',
     badge: 'Popular',
@@ -19,7 +21,7 @@ const PLANS = [
   {
     id: 2,
     name: 'Family Shield',
-    price: '₹599/month',
+    price: 599,
     coverage: '₹5 Lakh',
     color: 'from-teal-500 to-teal-600',
     badge: 'Best Value',
@@ -34,7 +36,7 @@ const PLANS = [
   {
     id: 3,
     name: 'Premium Care',
-    price: '₹999/month',
+    price: 999,
     coverage: '₹10 Lakh',
     color: 'from-purple-500 to-purple-600',
     badge: 'Premium',
@@ -50,16 +52,105 @@ const PLANS = [
 ];
 
 const Insurance = () => {
+  const { user } = useAuth();
+  
+  // Modals & Flow States
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [successData, setSuccessData] = useState(null); // { policyId, policyNumber }
+
+  // Form State
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    dob: '',
+    paymentMethod: 'Online',
+  });
+
+  const handleSelectPlan = (plan) => {
+    setSelectedPlan(plan);
+    setShowCheckout(true);
+  };
+
+  const handlePurchase = async (e) => {
+    e.preventDefault();
+    if (!selectedPlan) return;
+    
+    setIsProcessing(true);
+    
+    try {
+        const orderCreation = await PaymentService.createOrder(selectedPlan.price, "INR");
+        
+        await PaymentService.processOnlinePayment({
+            orderId: orderCreation.orderId,
+            amount: selectedPlan.price,
+            customerName: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            address: '', city: '', pincode: '',
+            onSuccess: async (paymentResponse) => {
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                const payload = {
+                    userId: user?._id || user?.id || null,
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    dob: formData.dob,
+                    planId: selectedPlan.id,
+                    planName: selectedPlan.name,
+                    premiumPaid: selectedPlan.price,
+                    coverage: selectedPlan.coverage,
+                    paymentMethod: formData.paymentMethod,
+                    transactionId: paymentResponse.paymentId
+                };
+
+                try {
+                    const res = await fetch(`${API_URL}/api/insurance/purchase`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        setShowCheckout(false);
+                        setSuccessData({
+                            policyId: data.policyId,
+                            policyNumber: data.policyNumber
+                        });
+                    } else {
+                        alert(data.message || 'Failed to purchase insurance');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('Something went wrong contacting the server.');
+                } finally {
+                    setIsProcessing(false);
+                }
+            },
+            onFailure: (err) => {
+                alert(`Payment failed: ${err}`);
+                setIsProcessing(false);
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        alert('Could not initialize payment gateway.');
+        setIsProcessing(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Hero Section */}
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white relative">
+      
+      {/* ── Background & Hero ─────────────────────────────────────────── */}
       <div className="bg-gradient-to-br from-[#075985] to-[#1e3a8a] text-white py-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <Shield size={16} />
-            Health Insurance Plans
+            <Shield size={16} /> Health Insurance Plans
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">
             Protect Your Family's <br className="hidden sm:block" />
@@ -67,13 +158,13 @@ const Insurance = () => {
           </h1>
           <p className="text-blue-100 text-lg max-w-2xl mx-auto">
             Comprehensive health insurance plans starting at just ₹299/month.
-            Cashless treatment, instant claims, and 24/7 support.
+            Cashless treatment, instant claims, and 24/7 priority support.
           </p>
         </div>
       </div>
 
-      {/* Trust Stats */}
-      <div className="max-w-6xl mx-auto px-4 -mt-8">
+      {/* ── Trust Stats ───────────────────────────────────────────────── */}
+      <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-10">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
             { icon: <Users size={22} />, value: '50,000+', label: 'Happy Members' },
@@ -92,8 +183,8 @@ const Insurance = () => {
         </div>
       </div>
 
-      {/* Plans */}
-      <div className="max-w-6xl mx-auto px-4 py-16">
+      {/* ── Plan Grid ─────────────────────────────────────────────────── */}
+      <div className="max-w-6xl mx-auto px-4 py-16 relative z-0">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3">Choose Your Plan</h2>
           <p className="text-gray-500">Select the perfect health insurance for you and your family</p>
@@ -103,13 +194,10 @@ const Insurance = () => {
           {PLANS.map((plan) => (
             <div
               key={plan.id}
-              className={`relative bg-white rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
-                selectedPlan === plan.id
-                  ? 'border-blue-500 shadow-xl shadow-blue-100 scale-[1.02]'
-                  : 'border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200'
+              className={`bg-white rounded-2xl border-2 transition-transform hover:scale-[1.02] duration-300 overflow-hidden shadow-sm hover:shadow-xl ${
+                 selectedPlan?.id === plan.id ? 'border-teal-500 shadow-teal-100' : 'border-gray-100'
               }`}
             >
-              {/* Badge */}
               <div className={`bg-gradient-to-r ${plan.color} text-white text-center py-2 text-xs font-bold tracking-wider uppercase`}>
                 {plan.badge}
               </div>
@@ -119,29 +207,24 @@ const Insurance = () => {
                 <p className="text-gray-500 text-sm mb-4">Coverage up to {plan.coverage}</p>
 
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-extrabold text-gray-900">{plan.price.split('/')[0]}</span>
-                  <span className="text-gray-400 text-sm">/month</span>
+                  <span className="text-3xl font-extrabold text-gray-900">₹{plan.price}</span>
+                  <span className="text-gray-400 text-sm">/year</span>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-3 mb-8">
                   {plan.features.map((feature, i) => (
                     <div key={i} className="flex items-start gap-2.5">
                       <CheckCircle size={16} className="text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700">{feature}</span>
+                      <span className="text-sm text-gray-700 font-medium">{feature}</span>
                     </div>
                   ))}
                 </div>
 
                 <button
-                  onClick={() => setSelectedPlan(plan.id)}
-                  className={`w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                    selectedPlan === plan.id
-                      ? `bg-gradient-to-r ${plan.color} text-white shadow-lg`
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  onClick={() => handleSelectPlan(plan)}
+                  className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 uppercase tracking-wide bg-gray-900 text-white hover:bg-teal-600 shadow-lg`}
                 >
-                  {selectedPlan === plan.id ? 'Selected' : 'Select Plan'}
-                  <ArrowRight size={14} />
+                  Buy Now <ArrowRight size={16} />
                 </button>
               </div>
             </div>
@@ -149,21 +232,99 @@ const Insurance = () => {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="bg-gradient-to-r from-[#0F8B8D] to-[#0ea5e9] text-white py-12 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl md:text-3xl font-extrabold mb-3">Need Help Choosing?</h2>
-          <p className="text-teal-100 mb-6 max-w-xl mx-auto">Our insurance advisors are available 24/7 to help you pick the right plan for your family.</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="tel:9318496221" className="bg-white text-teal-700 font-bold px-8 py-3 rounded-xl flex items-center gap-2 hover:bg-teal-50 transition-colors shadow-lg">
-              <Phone size={18} /> Call 9318496221
-            </a>
-            <button className="border-2 border-white/50 text-white font-bold px-8 py-3 rounded-xl flex items-center gap-2 hover:bg-white/10 transition-colors">
-              <FileText size={18} /> Compare Plans
-            </button>
-          </div>
+      {/* ── Checkout Modal ────────────────────────────────────────────── */}
+      {showCheckout && selectedPlan && !successData && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="bg-gray-50 border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+                    <div>
+                        <h3 className="font-extrabold text-gray-900">Purchase Plan</h3>
+                        <p className="text-xs text-gray-500 font-medium">You selected: {selectedPlan.name}</p>
+                    </div>
+                    <button onClick={() => setShowCheckout(false)} className="text-gray-400 hover:text-gray-600 bg-gray-200/50 p-2 rounded-full">
+                        <X size={18} />
+                    </button>
+                </div>
+                
+                <form onSubmit={handlePurchase} className="p-6">
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Full Name</label>
+                            <input required type="text" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors" placeholder="e.g. John Doe" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Email</label>
+                                <input required type="email" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors" placeholder="john@example.com" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Phone</label>
+                                <input required type="tel" value={formData.phone} onChange={e=>setFormData({...formData, phone: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors" placeholder="+91" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Date of Birth</label>
+                            <input required type="date" value={formData.dob} onChange={e=>setFormData({...formData, dob: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 transition-colors text-gray-700" />
+                        </div>
+
+                        {/* Summary & Pay */}
+                        <div className="mt-6 bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Total Payable</p>
+                                <p className="text-2xl font-extrabold text-gray-900">₹{selectedPlan.price}</p>
+                            </div>
+                            <button 
+                                type="submit" 
+                                disabled={isProcessing}
+                                className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg flex items-center gap-2 disabled:opacity-70 disabled:cursor-wait"
+                            >
+                                {isProcessing ? <><Loader2 size={18} className="animate-spin" /> Processing...</> : 'Pay Securely'}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Success Modal ──────────────────────────────────────────────── */}
+      {successData && (
+         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white/95 backdrop-blur-xl rounded-3xl w-full max-w-sm shadow-2xl p-8 text-center animate-in zoom-in slide-in-from-bottom-2 duration-300 border border-white">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-green-50">
+                    <CheckCircle className="text-green-500" size={40} />
+                </div>
+                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">Policy Activated!</h3>
+                <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+                    Your <span className="font-bold text-gray-900">{selectedPlan?.name}</span> plan is now active. We've sent the invoice and your digital card to your email.
+                </p>
+
+                <div className="bg-gray-50 rounded-xl p-3 mb-6 border border-gray-200 inline-block">
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5">Policy Number</p>
+                    <p className="font-mono font-bold text-gray-900 tracking-wider bg-white px-2 py-1 rounded shadow-sm">{successData.policyNumber}</p>
+                </div>
+
+                <div className="space-y-3">
+                    <a 
+                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/insurance/card/${successData.policyId}`}
+                        download
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95"
+                    >
+                        <Download size={18} /> Download Card PDF
+                    </a>
+                    <button 
+                        onClick={() => { setSuccessData(null); setSelectedPlan(null); }}
+                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl transition-colors"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+         </div>
+      )}
+
     </div>
   );
 };

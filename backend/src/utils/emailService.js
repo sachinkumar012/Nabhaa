@@ -56,7 +56,13 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
 const sendOtpEmail = async (email, otp) => {
     try {
         console.log("DEBUG OTP:", otp);
-        const port = Number(process.env.SMTP_PORT);
+
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            console.error("FATAL: SMTP_USER or SMTP_PASS is missing in environment variables!");
+            return false;
+        }
+
+        const port = Number(process.env.SMTP_PORT) || 587;
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
             port: port,
@@ -248,5 +254,63 @@ const sendCallbackRequest = async (phone) => {
     }
 };
 
-module.exports = { sendAppointmentEmail, sendOtpEmail, sendLabBookingConfirmation, sendVideoConsultationEmail, sendCallbackRequest };
+const sendInsuranceConfirmation = async (email, details, pdfBuffer) => {
+    try {
+        const port = Number(process.env.SMTP_PORT);
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: port,
+            secure: port === 465,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            },
+            tls: { rejectUnauthorized: false }
+        });
+
+        const message = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto;">
+                <h2 style="color: #0f8b8d;">Health Insurance Confirmed! 🛡️</h2>
+                <p>Dear <strong>${details.name}</strong>,</p>
+                <p>Thank you for choosing Nabha Healthcare. Your health insurance policy has been successfully activated.</p>
+                
+                <div style="background-color: #f0fdf4; padding: 15px; border-left: 4px solid #0f8b8d; border-radius: 4px; margin: 20px 0;">
+                    <p><strong>Policy Number:</strong> ${details.policyNumber}</p>
+                    <p><strong>Plan Name:</strong> ${details.planName}</p>
+                    <p><strong>Coverage:</strong> ${details.coverage}</p>
+                    <p><strong>Valid Till:</strong> ${new Date(details.validTill).toLocaleDateString('en-IN')}</p>
+                    <p><strong>Premium Paid:</strong> ₹${details.premiumPaid}</p>
+                </div>
+
+                <p>We have attached your official <strong>Insurance Policy Card</strong> to this email as a PDF. Please download and keep it safe. You can present this digital card at any of our 500+ network hospitals for cashless treatment.</p>
+                
+                <p>If you have any questions or need to file a claim, our 24/7 helpline is always available at 9318496221.</p>
+
+                <p>Stay healthy,<br><strong>Nabha Healthcare Team</strong></p>
+            </div>
+        `;
+
+        await transporter.sendMail({
+            from: `"Nabha Healthcare" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: `Health Insurance Policy Activated - ${details.policyNumber}`,
+            html: message,
+            attachments: [
+                {
+                    filename: `Nabha_Insurance_Card_${details.policyNumber}.pdf`,
+                    content: pdfBuffer,
+                    contentType: 'application/pdf'
+                }
+            ]
+        });
+
+        console.log("Insurance Confirmation Email sent to:", email);
+        return true;
+    } catch (error) {
+        console.error("Error sending Insurance Confirmation email:", error);
+        return false;
+    }
+};
+
+module.exports = { sendAppointmentEmail, sendOtpEmail, sendLabBookingConfirmation, sendVideoConsultationEmail, sendCallbackRequest, sendInsuranceConfirmation };
 
