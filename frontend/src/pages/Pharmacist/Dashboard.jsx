@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { 
     FiShoppingBag, 
@@ -52,12 +52,12 @@ export default function PharmacistDashboard() {
                     headers: { Authorization: `Bearer ${pharmacistToken}` }
                 };
                 
-                const response = await axios.get('/api/pharmacist/analytics', config);
+                const response = await api.get('/pharmacist/analytics', config);
                 if (response.data.success) {
                     setStats(response.data.analytics);
                 }
                 
-                const ordersRes = await axios.get('/api/orders/pharmacist', config);
+                const ordersRes = await api.get('/orders/pharmacist', config);
                 if (ordersRes.data) {
                     setRecentOrders(ordersRes.data.slice(0, 5));
                 }

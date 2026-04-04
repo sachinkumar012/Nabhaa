@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
+import api from '../../services/api';
 import { FiMail, FiLock, FiArrowRight, FiShield } from 'react-icons/fi';
 
 export default function PharmacistLogin() {
@@ -18,7 +18,7 @@ export default function PharmacistLogin() {
         setError('');
 
         try {
-            const response = await axios.post('/api/pharmacist/login', { email, password });
+            const response = await api.post('/pharmacist/login', { email, password });
             if (response.data.success) {
                 loginPharmacist(response.data.user, response.data.token);
                 navigate('/pharmacist/dashboard');

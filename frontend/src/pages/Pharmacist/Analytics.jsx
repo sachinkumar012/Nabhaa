@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { 
     FiPieChart, 
     FiTrendingUp, 
@@ -86,7 +86,7 @@ export default function PharmacistAnalytics() {
             if (!pharmacistToken) return;
             setLoading(true);
             try {
-                const response = await axios.get('/api/pharmacist/analytics', {
+                const response = await api.get('/pharmacist/analytics', {
                     headers: { Authorization: `Bearer ${pharmacistToken}` }
                 });
                 setData(response.data.analytics);

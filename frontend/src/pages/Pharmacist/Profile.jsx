@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { 
     FiUser, 
     FiMail, 
@@ -55,7 +55,7 @@ export default function PharmacistProfile() {
             const config = {
                 headers: { Authorization: `Bearer ${pharmacistToken}` }
             };
-            const response = await axios.put('/api/pharmacist/profile', formData, config);
+            const response = await api.put('/pharmacist/profile', formData, config);
             if (response.data.success) {
                 loginPharmacist(response.data.user, pharmacistToken);
                 setSuccess(true);

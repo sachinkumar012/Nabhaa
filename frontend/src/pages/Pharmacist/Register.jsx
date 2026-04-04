@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
+import api from '../../services/api';
 import { FiUser, FiMail, FiLock, FiPhone, FiMapPin, FiBriefcase, FiZap, FiArrowRight, FiShield } from 'react-icons/fi';
 
 export default function PharmacistRegister() {
@@ -36,7 +36,7 @@ export default function PharmacistRegister() {
         }
 
         try {
-            const response = await axios.post('/api/pharmacist/register', formData);
+            const response = await api.post('/pharmacist/register', formData);
             if (response.data.success) {
                 loginPharmacist(response.data.user, response.data.token);
                 navigate('/pharmacist/dashboard');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { 
     FiShoppingBag, 
     FiClock, 
@@ -29,7 +29,7 @@ export default function PharmacistOrders() {
         const fetchOrders = async () => {
             if (!pharmacistToken) return;
             try {
-                const response = await axios.get('/api/orders/pharmacist', {
+                const response = await api.get('/orders/pharmacist', {
                     headers: { Authorization: `Bearer ${pharmacistToken}` }
                 });
                 setOrders(response.data);
@@ -43,7 +43,7 @@ export default function PharmacistOrders() {
         fetchOrders();
 
         // Socket setup
-        const newSocket = io(window.location.origin || 'http://localhost:5000');
+        const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
         setSocket(newSocket);
 
         newSocket.on('connect', () => {
@@ -65,7 +65,7 @@ export default function PharmacistOrders() {
 
     const updateStatus = async (orderId, status) => {
         try {
-            const response = await axios.put(`/api/orders/${orderId}/status`, { status }, {
+            const response = await api.put(`/orders/${orderId}/status`, { status }, {
                 headers: { Authorization: `Bearer ${pharmacistToken}` }
             });
             if (response.data) {

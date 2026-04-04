@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { 
     FiPlus, 
     FiEdit2, 
@@ -44,7 +44,7 @@ export default function PharmacistMedicines() {
 
     const fetchMedicines = async () => {
         try {
-            const response = await axios.get('/api/medicines/my-medicines', {
+            const response = await api.get('/medicines/my-medicines', {
                 headers: { Authorization: `Bearer ${pharmacistToken}` }
             });
             setMedicines(response.data.data);
@@ -95,9 +95,9 @@ export default function PharmacistMedicines() {
                 headers: { Authorization: `Bearer ${pharmacistToken}` }
             };
             if (currentMedicine) {
-                await axios.put(`/api/medicines/${currentMedicine._id}`, formData, config);
+                await api.put(`/medicines/${currentMedicine._id}`, formData, config);
             } else {
-                await axios.post('/api/medicines', formData, config);
+                await api.post('/medicines', formData, config);
             }
             fetchMedicines();
             setIsModalOpen(false);
@@ -109,7 +109,7 @@ export default function PharmacistMedicines() {
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this medicine?')) {
             try {
-                await axios.delete(`/api/medicines/${id}`, {
+                await api.delete(`/medicines/${id}`, {
                     headers: { Authorization: `Bearer ${pharmacistToken}` }
                 });
                 setMedicines(prev => prev.filter(m => m._id !== id));

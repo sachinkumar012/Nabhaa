@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { 
     FiPlus, 
     FiEdit2, 
@@ -52,7 +52,7 @@ export default function PharmacistLabTests() {
     const fetchBookings = async () => {
         setBookingLoading(true);
         try {
-            const response = await axios.get('/api/lab-tests/pharmacist/bookings', {
+            const response = await api.get('/lab-tests/pharmacist/bookings', {
                 headers: { Authorization: `Bearer ${pharmacistToken}` }
             });
             setBookings(response.data.data);
@@ -66,7 +66,7 @@ export default function PharmacistLabTests() {
     const fetchLabTests = async () => {
         try {
             // Lab tests might be shared or pharmacist-specific depending on business model
-            const response = await axios.get('/api/lab-tests/tests', {
+            const response = await api.get('/lab-tests/tests', {
                 headers: { Authorization: `Bearer ${pharmacistToken}` }
             });
             setLabTests(response.data.data);
