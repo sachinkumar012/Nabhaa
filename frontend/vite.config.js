@@ -25,17 +25,7 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        // Split large vendor chunks to avoid Render's 5MB chunk warning
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'react-vendor';
-            }
-            if (id.includes('framer-motion')) return 'framer';
-            if (id.includes('lucide')) return 'icons';
-            return 'vendor';
-          }
-        },
+        // Letting Vite handle chunking naturally for better stability
       },
     },
   },
