@@ -14,7 +14,7 @@ const labTestSchema = new mongoose.Schema({
         required: true
     },
     category: {
-        type: String, // 'Health Packages', 'Diabetes', 'Hormonal', 'Vitamins', 'Heart', 'Kidney'
+        type: String,
         required: true
     },
     description: {
@@ -25,15 +25,29 @@ const labTestSchema = new mongoose.Schema({
         type: String
     }],
     reportsWithin: {
-        type: String, // e.g., '24-48 hours'
+        type: String,
         default: '24-48 hours'
     },
+    reportTime: {
+        type: String
+    },
+    sampleType: {
+        type: String
+    },
+    availableSlots: [{
+        type: String
+    }],
     fastingRequired: {
         type: Boolean,
         default: false
     },
     recommendedFor: {
-        type: String // e.g., 'Male/Female > 40 years'
+        type: String
+    },
+    pharmacist: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Pharmacist',
+        required: true
     }
 }, { timestamps: true });
 

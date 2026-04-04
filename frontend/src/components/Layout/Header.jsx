@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Globe, Stethoscope, Search, ShoppingCart, User, ChevronDown, ChevronRight, LogOut, FileText, Phone, Clock, Award, ShieldCheck, Package } from 'lucide-react';
+import { Menu, X, Globe, Stethoscope, Search, ShoppingCart, User, ChevronDown, ChevronRight, LogOut, FileText, Phone, Clock, Award, ShieldCheck, Package, Briefcase } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useLocationContext } from '../../modules/location/presentation/LocationContext';
 import { useAuth } from '../../context/AuthContext';
@@ -102,26 +102,26 @@ export default function Header() {
           1. TOP STRIP - TEAL
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="bg-[#0F8B8D] text-white py-1.5 px-4 text-xs md:text-sm">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-6">
+        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
+          <div className="flex items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-2 font-medium tracking-wide">
-              <Phone size={14} /> <span>HELPLINE : 9318496221</span>
+              <Phone size={14} className="shrink-0" /> <span>HELPLINE : 9318496221</span>
             </div>
-            <div className="hidden md:flex items-center gap-2 opacity-90">
-              <Clock size={14} /> <span>OPD Timings : 10:00AM - 5:00PM</span>
+            <div className="hidden lg:flex items-center gap-2 opacity-90">
+              <Clock size={14} className="shrink-0" /> <span>OPD Timings : 10:00AM - 5:00PM</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             {/* Language Selector */}
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline opacity-80">View in :</span>
-              <div className="flex gap-2.5">
+              <span className="hidden md:inline opacity-80">View in :</span>
+              <div className="flex gap-2 sm:gap-2.5">
                 {languages.map((lang) => (
                   <button
                     key={lang.code}
                     onClick={() => changeLanguage(lang.code)}
-                    className={`hover:text-blue-100 transition-colors ${currentLanguage === lang.code ? 'font-bold decoration-white underline underline-offset-2' : 'opacity-80'}`}
+                    className={`hover:text-blue-100 transition-colors text-[10px] sm:text-xs md:text-sm ${currentLanguage === lang.code ? 'font-bold decoration-white underline underline-offset-2' : 'opacity-80'}`}
                   >
                     {lang.name}
                   </button>
@@ -130,7 +130,7 @@ export default function Header() {
             </div>
 
             {/* ── Profile / Login ─────────────────────────────────────── */}
-            <div className="border-l border-white/30 pl-4 relative" ref={userMenuRef}>
+            <div className="flex items-center relative" ref={userMenuRef}>
               {user ? (
                 <div className="relative">
                   <button
@@ -138,7 +138,6 @@ export default function Header() {
                     className="flex items-center gap-2 font-medium hover:text-white transition-colors cursor-pointer"
                     id="profile-avatar-btn"
                   >
-                    {/* ── Avatar circle with first letter ──────────── */}
                     <div className="w-7 h-7 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-xs font-bold text-white">
                       {avatarLetter}
                     </div>
@@ -146,9 +145,8 @@ export default function Header() {
                     <ChevronDown size={14} className={`transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
-                  {/* ── Profile dropdown ────────────────────────── */}
+                  {/* ── Profile dropdown (Logged In) ────────────────────────── */}
                   <div className={`absolute top-[150%] right-0 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 text-gray-800 z-50 overflow-hidden transition-all duration-200 origin-top-right ${isUserMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
-                    {/* Profile info header */}
                     <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0284c7] to-[#1e3a8a] flex items-center justify-center text-white text-lg font-bold shadow-sm">
@@ -160,7 +158,6 @@ export default function Header() {
                         </div>
                       </div>
                     </div>
-
                     <div className="py-1">
                       <Link to="/health-records" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
                         <FileText size={16} className="text-gray-400" /> Medical Records
@@ -172,7 +169,6 @@ export default function Header() {
                         <User size={16} className="text-gray-400" /> My Profile
                       </Link>
                     </div>
-
                     <div className="border-t border-gray-100">
                       <button
                         onClick={() => { logout(); setIsUserMenuOpen(false); }}
@@ -184,9 +180,87 @@ export default function Header() {
                   </div>
                 </div>
               ) : (
-                <button onClick={() => setAuthModalOpen(true)} className="flex items-center gap-1.5 font-medium hover:text-white transition-colors">
-                  <User size={14} /> Login
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center gap-2 font-medium hover:text-white transition-colors cursor-pointer bg-white/10 px-3 py-1.5 rounded-lg border border-white/20 shadow-sm"
+                  >
+                    <User size={14} />
+                    <span className="text-sm">Login / Portal</span>
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* ── Login / Portal Dropdown (Not Logged In) ────────────────────────── */}
+                  <div className={`absolute top-[150%] right-0 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 text-gray-800 z-50 overflow-hidden transition-all duration-200 origin-top-right ${isUserMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Portal</h3>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={() => { setAuthModalOpen(true); setIsUserMenuOpen(false); }}
+                        className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                          <User size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold">Patient Login</span>
+                          <span className="text-[10px] text-gray-500">Book doctors & tests</span>
+                        </div>
+                      </button>
+
+                      <div className="h-[1px] bg-gray-100 my-1"></div>
+
+                      <Link
+                        to="/pharmacist/login"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600">
+                          <Briefcase size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold">Partner Login</span>
+                          <span className="text-[10px] text-gray-500">Vendor & Pharmacy portal</span>
+                        </div>
+                      </Link>
+
+                      <Link
+                        to="/doctor/login"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                          <Stethoscope size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold">Doctor Login</span>
+                          <span className="text-[10px] text-gray-500">Consultation management</span>
+                        </div>
+                      </Link>
+
+                      <Link
+                        to="/admin/login"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-red-50 hover:text-red-700 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                          <ShieldCheck size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold">Admin Portal</span>
+                          <span className="text-[10px] text-gray-500">System administration</span>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -200,15 +274,15 @@ export default function Header() {
         <div className="container mx-auto px-4 py-3 md:py-4 flex flex-wrap md:flex-nowrap items-center justify-between gap-4">
 
           {/* Logo Assembly */}
-          <Link to="/" className="flex items-center gap-3 group shrink-0">
-            <div className="bg-gradient-to-br from-[#075985] to-[#1e3a8a] text-yellow-400 p-2 md:p-3 rounded-full shadow border-2 border-red-500">
-              <Stethoscope size={28} className="md:w-8 md:h-8" />
+          <Link to="/" className="flex items-center gap-2 md:gap-3 group shrink-0">
+            <div className="bg-gradient-to-br from-[#075985] to-[#1e3a8a] text-yellow-400 p-1.5 md:p-3 rounded-full shadow border-2 border-red-500">
+              <Stethoscope size={22} className="md:w-8 md:h-8" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-xl md:text-3xl font-bold text-[#0284c7] leading-tight uppercase tracking-wide">
+              <h1 className="text-lg md:text-2xl lg:text-3xl font-bold text-[#0284c7] leading-tight uppercase tracking-wide">
                 Nabha <span className="text-[#0ea5e9]">Hospital</span>
               </h1>
-              <span className="text-[9px] md:text-[11px] text-red-600 font-bold tracking-widest uppercase mt-0.5">
+              <span className="text-[7px] md:text-[11px] text-red-600 font-bold tracking-widest uppercase mt-0 md:mt-0.5">
                 & Lifeline Medical Institutions
               </span>
             </div>

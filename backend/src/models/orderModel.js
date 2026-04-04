@@ -72,10 +72,14 @@ const orderSchema = new mongoose.Schema({
     deliveredAt: {
         type: Date
     },
+    pharmacist: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Pharmacist'
+    },
     status: {
         type: String,
         default: 'Pending',
-        enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
+        enum: ['Pending', 'Accepted', 'Processing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled', 'Rejected']
     },
     createdAt: {
         type: Date,

@@ -5,6 +5,7 @@ import {
   FlaskConical, Info, BookOpen, Activity, AlertTriangle, Loader2, Home, Package
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 /* ─── Medicine Style Helpers ──────────────────────────────────────────────── */
 const getMedStyle = (med) => {
@@ -55,10 +56,11 @@ const RelatedCard = ({ med, onAdd, onClick }) => {
 };
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
-const ProductDetailPage = ({ addToCart, getCartQty }) => {
+const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, setAuthModalOpen } = useAuth();
+  const { addToCart, getCartQty } = useCart();
 
   const [medicine, setMedicine] = useState(null);
   const [relatedMedicines, setRelatedMedicines] = useState([]);
@@ -99,6 +101,7 @@ const ProductDetailPage = ({ addToCart, getCartQty }) => {
           ],
           dosage: med.dosage || 'As prescribed by your doctor',
           storage: med.storage || 'Store in a cool, dry place below 25°C',
+          pharmacist: med.pharmacist?._id || med.pharmacist,
           returnPolicy: '7 days return',
         };
         setMedicine(mapped);

@@ -592,7 +592,11 @@ const LabTests = ({ user }) => {
               View All
             </button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.75rem' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
+            gap: '0.75rem' 
+          }}>
             {/* All Tests tile */}
             <button onClick={() => setActiveCategory('All')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 0.5rem', borderRadius: 12, border: activeCategory === 'All' ? `2px solid ${TEAL}` : '1.5px solid #e5e7eb', background: activeCategory === 'All' ? '#E0F7FA' : 'white', cursor: 'pointer' }}>
               <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>🏥</div>
@@ -649,9 +653,9 @@ const LabTests = ({ user }) => {
 
         {/* ── Section 4: Trust strip ── */}
         <div style={{ background: 'white', borderRadius: 16, padding: '1.25rem 1.5rem', marginBottom: '1.25rem', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1.5rem', justifyContent: 'center' }}>
             {[['🏠','Free Home\nCollection'],['📋','Reports in\n24-48 hrs'],['🔬','NABL Certified\nLabs'],['💰','Affordable\nPricing'],['🔒','Secure &\nPrivate']].map(([icon, label]) => (
-              <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', flexBasis: 100 }}>
+              <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}>
                 <span style={{ fontSize: '1.5rem' }}>{icon}</span>
                 <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#374151', textAlign: 'center', whiteSpace: 'pre-line' }}>{label}</span>
               </div>

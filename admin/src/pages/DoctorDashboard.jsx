@@ -79,7 +79,8 @@ const DoctorDashboard = () => {
                                 onClick={() => {
                                     // Redirect to Frontend for Video Call 
                                     // Assuming frontend port 5173.
-                                    window.open(`http://localhost:5173/video-call/${data.callId}?type=doctor&name=${encodeURIComponent(profile.name)}`, '_blank');
+                                    const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+                                    window.open(`${frontendUrl}/video-call/${data.callId}?type=doctor&name=${encodeURIComponent(profile.name)}`, '_blank');
                                     closeToast();
                                 }}
                                 className="bg-green-500 text-white px-3 py-1 rounded text-sm"

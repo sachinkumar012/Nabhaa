@@ -51,14 +51,32 @@ const Pharmacy = () => {
   const { location, detectLocation, isLoading: locationLoading, error: locationError } = useLocationContext();
   useEffect(() => { if (locationError) console.warn(locationError); }, [locationError]);
 
-  // ── Fetch medicines ──────────────────────────────────────────────────────
+  // ── UI state ─────────────────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeSubcat, setActiveSubcat] = useState('');
+  const [sortBy, setSortBy] = useState('default');
+  const [showMobileCats, setShowMobileCats] = useState(false);
+
+  // ── Fetch medicines (server-side search, category & sort) ─────────
   useEffect(() => {
     const fetchMedicines = async () => {
       setLoading(true);
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/medicines?page=${currentPage}&limit=${itemsPerPage}`
-        );
+        let baseUrl = import.meta.env.VITE_API_URL || '';
+        let url = `${baseUrl}/api/medicines?page=${currentPage}&limit=${itemsPerPage}`;
+        if (searchQuery.trim()) {
+          url += `&search=${encodeURIComponent(searchQuery.trim())}`;
+        }
+        if (activeCategory && activeCategory !== 'all') {
+          const cat = CATEGORIES.find(c => c.id === activeCategory);
+          if (cat) url += `&category=${encodeURIComponent(cat.label)}`;
+        }
+        if (sortBy && sortBy !== 'default') {
+          url += `&sort=${encodeURIComponent(sortBy)}`;
+        }
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch medicines');
         const data = await response.json();
 
@@ -70,20 +88,21 @@ const Pharmacy = () => {
           location: 'Nabha Pharmacy',
           price: med.price,
           originalPrice: Math.round(med.price * 1.25),
-          discount: 20,
-          description: med.composition || med.name,
-          inStock: med.isDiscontinued ? 0 : 100,
+          discount: med.discount || 20,
+          description: med.description || med.composition || med.name,
+          inStock: med.isDiscontinued ? 0 : (med.stock || 100),
           manufacturer: med.manufacturer,
-          prescriptionRequired: false,
+          prescriptionRequired: med.requiresPrescription || false,
           packSize: med.packSize || 'Standard Pack',
           pricePerTablet: (med.price / 10).toFixed(2),
-          image: null,
+          image: med.images && med.images[0] ? med.images[0] : null,
+          pharmacist: med.pharmacist,
           uses: ['General Health'],
           sideEffects: ['Consult Doctor'],
           precautions: ['Keep away from children'],
           directions: 'As prescribed',
           storage: 'Cool dry place',
-          dosage: 'As prescribed',
+          dosage: med.dosage || 'As prescribed',
           modeOfAction: 'Medical',
           returnPolicy: '7 days return',
           rating: 4.0,
@@ -99,13 +118,23 @@ const Pharmacy = () => {
         setLoading(false);
       }
     };
-    fetchMedicines();
-  }, [currentPage]);
+
+    const timer = setTimeout(() => {
+      fetchMedicines();
+    }, searchQuery ? 500 : 0);
+
+    return () => clearTimeout(timer);
+  }, [currentPage, searchQuery, activeCategory, sortBy]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeCategory, sortBy]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 300, behavior: 'smooth' });
     }
   };
 
@@ -130,12 +159,6 @@ const Pharmacy = () => {
     paymentMethod: 'cod', prescriptionFile: null,
   });
 
-  // ── UI state ─────────────────────────────────────────────────────────────
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [activeSubcat, setActiveSubcat] = useState('');
-  const [sortBy, setSortBy] = useState('default');
-  const [showMobileCats, setShowMobileCats] = useState(false);
 
   // ── Cart helpers (wraps CartContext, requires login) ─────────────────────
   const addToCart = (medicine, deltaOrQty = 1) => {
@@ -195,6 +218,7 @@ const Pharmacy = () => {
         image: item.image || '',
         price: item.price,
         medicine: item.id || item.productId,
+        pharmacist: item.pharmacist,
         source: item.source || 'normal',
       })),
       shippingAddress: {
@@ -279,12 +303,12 @@ const Pharmacy = () => {
 
   // ── Order helpers ─────────────────────────────────────────────────────────
   const getOrderStatus = (order) => {
-    const now = new Date();
-    const hrs = (now - new Date(order.orderDate)) / (1000 * 60 * 60);
-    if (hrs < 1) return { status: 'confirmed', message: 'Order Confirmed', progress: 25 };
-    if (hrs < 24) return { status: 'processing', message: 'Being Prepared', progress: 50 };
-    if (now < new Date(order.deliveryDate)) return { status: 'shipping', message: 'Out for Delivery', progress: 75 };
-    return { status: 'delivered', message: 'Delivered', progress: 100 };
+    const status = order.status || 'Pending';
+    if (['Pending'].includes(status)) return { status: 'confirmed', message: 'Order Confirmed', progress: 25 };
+    if (['Accepted', 'Processing', 'Confirmed'].includes(status)) return { status: 'processing', message: 'Being Prepared', progress: 50 };
+    if (['Packed', 'Out for Delivery', 'Shipped'].includes(status)) return { status: 'shipping', message: 'Out for Delivery', progress: 75 };
+    if (['Delivered'].includes(status)) return { status: 'delivered', message: 'Delivered', progress: 100 };
+    return { status: 'confirmed', message: status, progress: 25 };
   };
 
   const formatDate = (ds) => new Date(ds).toLocaleDateString('en-IN', {
@@ -305,42 +329,8 @@ const Pharmacy = () => {
     } catch { alert('Network error'); }
   };
 
-  // ── Filtering & Sorting ───────────────────────────────────────────────────
-  const filteredAndSorted = (() => {
-    let result = [...medicines];
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(m =>
-        m.name.toLowerCase().includes(q) ||
-        m.type.toLowerCase().includes(q) ||
-        (m.description || '').toLowerCase().includes(q) ||
-        (m.manufacturer || '').toLowerCase().includes(q)
-      );
-    }
-
-    // Category filter
-    if (activeCategory && activeCategory !== 'all') {
-      const cat = CATEGORIES.find(c => c.id === activeCategory);
-      if (cat && cat.keywords.length > 0) {
-        result = result.filter(m => {
-          const combined = `${m.name} ${m.type} ${m.description || ''}`.toLowerCase();
-          return cat.keywords.some(kw => combined.includes(kw));
-        });
-      }
-    }
-
-    // Sort
-    switch (sortBy) {
-      case 'price_asc': result.sort((a, b) => a.price - b.price); break;
-      case 'price_desc': result.sort((a, b) => b.price - a.price); break;
-      case 'name_asc': result.sort((a, b) => a.name.localeCompare(b.name)); break;
-      case 'discount': result.sort((a, b) => (b.discount || 0) - (a.discount || 0)); break;
-    }
-
-    return result;
-  })();
+  // ── Filtering & Sorting (Full Server-side) ─────────────────────────
+  const filteredAndSorted = medicines;
 
   /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      RENDER

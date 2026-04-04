@@ -61,7 +61,7 @@ class VideoCallService {
         process.env.REACT_APP_SOCKET_SERVER ||
         (process.env.NODE_ENV === "production"
           ? "https://your-socket-server.herokuapp.com"
-          : "http://localhost:3001");
+          : (import.meta.env.VITE_API_URL || "http://localhost:5000"));
 
       this.socket = io(socketUrl, {
         transports: ["websocket", "polling"],

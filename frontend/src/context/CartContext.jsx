@@ -129,6 +129,7 @@ export const CartProvider = ({ children }) => {
           packSize: medicine.packSize || '',
           type: medicine.type || 'Medicine',
           image: medicine.image || '',
+          pharmacist: medicine.pharmacist,
           source,
         }];
       }

@@ -11,6 +11,11 @@ const labBookingSchema = new mongoose.Schema({
         ref: 'LabTest',
         required: true
     },
+    pharmacist: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Pharmacist',
+        required: true
+    },
     patientDetails: {
         name: { type: String, required: true },
         age: { type: Number, required: true },

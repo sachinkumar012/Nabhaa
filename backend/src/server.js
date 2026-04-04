@@ -27,6 +27,11 @@ io.on('connection', (socket) => {
         console.log(`Socket ${socket.id} joined doctor room: doctor_${doctorId}`);
     });
 
+    socket.on('join_pharmacist_room', (pharmacistId) => {
+        socket.join(`pharmacist_${pharmacistId}`);
+        console.log(`Socket ${socket.id} joined pharmacist room: pharmacist_${pharmacistId}`);
+    });
+
     socket.on('call_doctor', (data) => {
         // data: { doctorId, patientName, callId }
         console.log('Incoming call for doctor:', data.doctorId);

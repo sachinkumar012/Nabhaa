@@ -3,6 +3,65 @@ const router = express.Router();
 const LabTest = require('../models/labTestModel');
 const LabBooking = require('../models/labBookingModel');
 const { sendLabBookingConfirmation, sendCallbackRequest } = require('../utils/emailService');
+const { protect, authorize } = require('../middleware/authMiddleware');
+
+// --- MANAGEMENT ROUTES (Pharmacist) ---
+
+// Create new lab test
+router.post('/tests', protect, authorize('pharmacist'), async (req, res) => {
+    try {
+        const test = new LabTest({
+            ...req.body,
+            pharmacist: req.user._id
+        });
+        await test.save();
+        res.status(201).json({ success: true, data: test });
+    } catch (error) {
+        console.error('Create Lab Test Error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Update lab test
+router.put('/tests/:id', protect, authorize('pharmacist'), async (req, res) => {
+    try {
+        let test = await LabTest.findById(req.params.id);
+        if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
+        
+        // Ensure pharmacist owns this test
+        if (test.pharmacist.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to edit this test' });
+        }
+
+        test = await LabTest.findByIdAndUpdate(req.params.id, req.body, { 
+            new: true, 
+            runValidators: true 
+        });
+        res.json({ success: true, data: test });
+    } catch (error) {
+        console.error('Update Lab Test Error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Delete lab test
+router.delete('/tests/:id', protect, authorize('pharmacist'), async (req, res) => {
+    try {
+        const test = await LabTest.findById(req.params.id);
+        if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
+
+        if (test.pharmacist.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this test' });
+        }
+
+        await test.deleteOne();
+        res.json({ success: true, message: 'Lab test removed' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// --- PUBLIC / PATIENT ROUTES ---
 
 // Request a callback — sends phone number to admin Gmail
 router.post('/callback', async (req, res) => {
@@ -73,6 +132,7 @@ router.post('/book', async (req, res) => {
 
         const booking = new LabBooking({
             test: testId,
+            pharmacist: test.pharmacist,
             user: userId,
             patientDetails,
             status: 'confirmed'
@@ -119,6 +179,26 @@ router.get('/my-bookings', async (req, res) => {
         res.json({ success: true, data: bookings });
     } catch (error) {
         console.error("Error fetching bookings:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get pharmacist's test bookings
+router.get('/pharmacist/bookings', async (req, res) => {
+    try {
+        const pharmacistId = req.query.pharmacistId || (req.user && req.user._id);
+
+        if (!pharmacistId) {
+            return res.status(400).json({ success: false, message: 'Pharmacist ID required' });
+        }
+
+        const bookings = await LabBooking.find({ pharmacist: pharmacistId })
+            .populate('test')
+            .sort({ createdAt: -1 });
+
+        res.json({ success: true, data: bookings });
+    } catch (error) {
+        console.error("Error fetching pharmacist bookings:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });

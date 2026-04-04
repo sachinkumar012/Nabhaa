@@ -1,5 +1,7 @@
 const Order = require('../models/orderModel');
 
+const Pharmacist = require('../models/Pharmacist');
+
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private (or open with userId in body)
@@ -28,6 +30,16 @@ const addOrderItems = async (req, res) => {
             return res.status(400).json({ message: 'User ID is required' });
         }
 
+        // DETERMINE PHARMACIST FROM MEDICINES IN CART
+        // We take the pharmacist of the first item to route the whole order
+        let pharmacistId = orderItems[0].pharmacist;
+        
+        // Fallback: if no pharmacist assigned to item, try finding any approved pharmacist
+        if (!pharmacistId) {
+            const fallbackPharmacist = await Pharmacist.findOne({ verificationStatus: 'Approved' });
+            pharmacistId = fallbackPharmacist ? fallbackPharmacist._id : null;
+        }
+
         const order = new Order({
             orderItems,
             user: resolvedUserId,
@@ -40,6 +52,7 @@ const addOrderItems = async (req, res) => {
             isPaid: isPaid || false,
             paymentResult: paymentResult || {},
             status: status || 'Pending',
+            pharmacist: pharmacistId
         });
 
         const createdOrder = await order.save();
@@ -144,11 +157,62 @@ const updateOrderToDelivered = async (req, res) => {
     }
 };
 
+// --- PHARMACIST SPECIFIC METHODS ---
+
+// @desc    Get pharmacist orders
+// @route   GET /api/orders/pharmacist
+// @access  Private (Pharmacist)
+const getPharmacistOrders = async (req, res) => {
+    try {
+        const orders = await Order.find({ pharmacist: req.user._id })
+            .populate('user', 'name phone email')
+            .sort({ createdAt: -1 });
+        res.json(orders);
+    } catch (err) {
+        console.error('getPharmacistOrders error:', err);
+        res.status(500).json({ message: err.message || 'Server Error' });
+    }
+};
+
+// @desc    Update order status
+// @route   PUT /api/orders/:id/status
+// @access  Private (Pharmacist)
+const updateOrderStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Check ownership
+        if (order.pharmacist && order.pharmacist.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
+        order.status = status;
+        
+        if (status === 'Delivered') {
+            order.isDelivered = true;
+            order.deliveredAt = Date.now();
+        }
+
+        const updatedOrder = await order.save();
+        res.json(updatedOrder);
+    } catch (err) {
+        console.error('updateOrderStatus error:', err);
+        res.status(500).json({ message: err.message || 'Server Error' });
+    }
+};
+
 module.exports = {
     addOrderItems,
     getOrderById,
     updateOrderToPaid,
     updateOrderToDelivered,
     getMyOrders,
-    getOrders
+    getOrders,
+    getPharmacistOrders,
+    updateOrderStatus
 };

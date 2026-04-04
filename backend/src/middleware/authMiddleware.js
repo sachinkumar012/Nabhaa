@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const Customer = require('../models/customerModel');
 const Admin = require('../models/adminModel');
 const Doctor = require('../models/doctorModel');
+const Pharmacist = require('../models/Pharmacist');
 
 const protect = async (req, res, next) => {
     let token;
@@ -15,31 +16,26 @@ const protect = async (req, res, next) => {
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
 
-            // Check if user is admin, doctor or customer
-            // This is a bit tricky since we have 3 collections. 
-            // For now, let's try to find in all 3 or rely on decoded role if we added it to token (we only added id)
-            // But usually 'protect' is for customers. Let's make it generic or split.
-
-            console.log("Protect Middleware - Decoded:", decoded);
-
-            // Try Customer First
+            // Try Customer
             req.user = await Customer.findById(decoded.id).select('-password');
-            if (req.user) console.log("User found as Customer");
-
+            
             if (!req.user) {
                 // Try Doctor
                 req.user = await Doctor.findById(decoded.id).select('-password');
-                if (req.user) console.log("User found as Doctor");
             }
 
             if (!req.user) {
                 // Try Admin
                 req.user = await Admin.findById(decoded.id).select('-password');
-                if (req.user) console.log("User found as Admin");
             }
 
             if (!req.user) {
-                throw new Error('Not authorized, user not found');
+                // Try Pharmacist
+                req.user = await Pharmacist.findById(decoded.id).select('-password');
+            }
+
+            if (!req.user) {
+                return res.status(401).json({ message: 'Not authorized, user not found' });
             }
 
             next();
@@ -52,6 +48,17 @@ const protect = async (req, res, next) => {
     }
 };
 
+const authorize = (...roles) => {
+    return (req, res, next) => {
+        if (!req.user || !roles.includes(req.user.role)) {
+            return res.status(403).json({
+                message: `User role ${req.user ? req.user.role : 'none'} is not authorized to access this route`
+            });
+        }
+        next();
+    };
+};
+
 const admin = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -60,4 +67,4 @@ const admin = (req, res, next) => {
     }
 };
 
-module.exports = { protect, admin };
+module.exports = { protect, authorize, admin };

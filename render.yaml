@@ -31,3 +31,18 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
+  # ── Admin Dashboard (Static Site) ─────────────────────────────────────────
+  - type: web
+    name: nabha-admin
+    runtime: static
+    rootDir: admin
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://nabha-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

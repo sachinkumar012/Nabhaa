@@ -7,7 +7,7 @@ class PaymentService {
     this.monthlyPlanId = "plan_Qq8H89m2adcMl6";
     this.yearlyPlanId = "plan_Qq8Hl09aOS9uAg";
     this.webhookSecret = "69f8825c-ae86-4a76-89d5-501a621e772e";
-    this.serverEndpoint = "http://localhost:5001";
+        this.serverEndpoint = import.meta.env.VITE_API_URL || "http://localhost:5000";
     this.isRazorpayLoaded = false;
   }
 

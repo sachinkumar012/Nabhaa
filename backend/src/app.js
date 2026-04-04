@@ -47,6 +47,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const prescriptionRoutes = require('./routes/prescriptionRoutes');
+const pharmacistRoutes = require('./routes/pharmacistRoutes');
 
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
@@ -59,6 +60,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/lab-tests', require('./routes/labRoutes'));
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/pharmacist', pharmacistRoutes);
 app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Error Handling Middleware

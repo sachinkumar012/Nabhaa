@@ -10,12 +10,16 @@ import { useAuth } from '../context/AuthContext';
 const STATUS_STEPS = ['Pending', 'Processing', 'Shipped', 'Delivered'];
 
 const STATUS_CONFIG = {
-  Pending:    { color: 'text-yellow-600', bg: 'bg-yellow-100', border: 'border-yellow-300', badge: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  Processing: { color: 'text-blue-600',   bg: 'bg-blue-100',   border: 'border-blue-300',   badge: 'bg-blue-100 text-blue-700 border-blue-200' },
-  Confirmed:  { color: 'text-blue-600',   bg: 'bg-blue-100',   border: 'border-blue-300',   badge: 'bg-blue-100 text-blue-700 border-blue-200' },
-  Shipped:    { color: 'text-purple-600', bg: 'bg-purple-100', border: 'border-purple-300', badge: 'bg-purple-100 text-purple-700 border-purple-200' },
-  Delivered:  { color: 'text-green-600',  bg: 'bg-green-100',  border: 'border-green-300',  badge: 'bg-green-100 text-green-700 border-green-200' },
-  Cancelled:  { color: 'text-red-600',    bg: 'bg-red-100',    border: 'border-red-300',    badge: 'bg-red-100 text-red-700 border-red-200' },
+  Pending:            { color: 'text-yellow-600', bg: 'bg-yellow-100', border: 'border-yellow-300', badge: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+  Processing:         { color: 'text-blue-600',   bg: 'bg-blue-100',   border: 'border-blue-300',   badge: 'bg-blue-100 text-blue-700 border-blue-200' },
+  Accepted:           { color: 'text-blue-600',   bg: 'bg-blue-100',   border: 'border-blue-300',   badge: 'bg-blue-100 text-blue-700 border-blue-200' },
+  Confirmed:          { color: 'text-blue-600',   bg: 'bg-blue-100',   border: 'border-blue-300',   badge: 'bg-blue-100 text-blue-700 border-blue-200' },
+  Packed:             { color: 'text-purple-600', bg: 'bg-purple-100', border: 'border-purple-300', badge: 'bg-purple-100 text-purple-700 border-purple-200' },
+  Shipped:            { color: 'text-purple-600', bg: 'bg-purple-100', border: 'border-purple-300', badge: 'bg-purple-100 text-purple-700 border-purple-200' },
+  'Out for Delivery': { color: 'text-purple-600', bg: 'bg-purple-100', border: 'border-purple-300', badge: 'bg-purple-100 text-purple-700 border-purple-200' },
+  Delivered:          { color: 'text-green-600',  bg: 'bg-green-100',  border: 'border-green-300',  badge: 'bg-green-100 text-green-700 border-green-200' },
+  Cancelled:          { color: 'text-red-600',    bg: 'bg-red-100',    border: 'border-red-300',    badge: 'bg-red-100 text-red-700 border-red-200' },
+  Rejected:           { color: 'text-red-600',    bg: 'bg-red-100',    border: 'border-red-300',    badge: 'bg-red-100 text-red-700 border-red-200' },
 };
 
 const STEP_ICONS = {
@@ -95,9 +99,17 @@ const OrderDetailPage = () => {
   const orderId = order._id || order.id;
   const createdAt = order.createdAt || order.orderDate;
 
-  /* Current step index in the timeline */
-  const currentStepIdx = STATUS_STEPS.indexOf(status);
-  const isCancelled = status === 'Cancelled';
+  /* Mapping helper to sync partner-side statuses with patient-side 4-step UI */
+  const mapStatusToIdx = (s) => {
+    if (['Pending'].includes(s)) return 0;
+    if (['Accepted', 'Processing', 'Confirmed'].includes(s)) return 1;
+    if (['Packed', 'Out for Delivery', 'Shipped'].includes(s)) return 2;
+    if (['Delivered'].includes(s)) return 3;
+    return 0; // Default
+  };
+
+  const currentStepIdx = mapStatusToIdx(status);
+  const isCancelled = ['Cancelled', 'Rejected'].includes(status);
 
   return (
     <div className="min-h-screen bg-slate-50">

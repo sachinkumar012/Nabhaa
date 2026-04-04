@@ -15,14 +15,31 @@ import VideoCallRoom from './components/VideoCallRoom';
 
 // Protected Route Component for Admin
 const ProtectedRoute = ({ children }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const token = localStorage.getItem('adminToken');
+  
   if (!token) {
     return <Navigate to="/login" replace />;
   }
+  
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900">
-      <Sidebar role="admin" />
-      <main className="flex-1 p-8 ml-64 transition-all duration-300">
+    <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900 overflow-x-hidden">
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-gray-900 text-white flex items-center px-4 z-40 shadow-md">
+        <button 
+          onClick={() => setIsSidebarOpen(true)}
+          className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <span className="ml-4 font-bold text-lg">Nabha Admin</span>
+      </div>
+
+      <main className={`flex-1 p-4 md:p-8 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-64'} pt-20 lg:pt-8`}>
         {children}
       </main>
     </div>

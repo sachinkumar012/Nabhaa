@@ -33,6 +33,19 @@ import DoctorDashboard from './pages/Doctor/DoctorDashboard';
 import PrescriptionAnalysis from './pages/PrescriptionAnalysis';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
+// Pharmacist Pages
+import PharmacistLogin from './pages/Pharmacist/Login';
+import PharmacistRegister from './pages/Pharmacist/Register';
+import PharmacistDashboard from './pages/Pharmacist/Dashboard';
+import PharmacistOrders from './pages/Pharmacist/Orders';
+import PharmacistMedicines from './pages/Pharmacist/Medicines';
+import PharmacistLabTests from './pages/Pharmacist/LabTests';
+import PharmacistAnalytics from './pages/Pharmacist/Analytics';
+import PharmacistProfile from './pages/Pharmacist/Profile';
+import AdminLogin from './pages/AdminLogin';
+
+import PatientLayout from './components/Layout/PatientLayout';
+
 function App() {
   return (
     <LanguageProvider>
@@ -41,47 +54,63 @@ function App() {
           <AuthProvider>
             <CartProvider>
               <Router>
-                <div className="min-h-screen flex flex-col">
+                <div className="min-h-screen flex flex-col font-outfit">
                   <AuthSidebar />
 
-                  {/* ── Single global Header for ALL pages ──────────── */}
-                  <Header />
+                  <Routes>
+                    {/* Video call — full screen, no chrome */}
+                    <Route path="/video-call/:callId" element={<VideoCallRoom />} />
 
-                  <main className="flex-grow">
-                    <Routes>
-                      {/* Video call — full screen, no chrome */}
-                      <Route path="/video-call/:callId" element={<VideoCallRoom />} />
+                    {/* PORTAL ROUTES (Isolated - No site Header/Footer) */}
+                    
+                    {/* Doctor Routes */}
+                    <Route path="/doctor/login" element={<DoctorLogin />} />
+                    <Route path="/doctor/dashboard" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorDashboard /></ProtectedRoute>} />
 
-                      {/* Public routes */}
-                      <Route path="/" element={<Home />} />
-                      <Route path="/doctors" element={<Doctors />} />
-                      <Route path="/hospitals" element={<Hospitals />} />
-                      <Route path="/pharmacy" element={<Pharmacy />} />
-                      <Route path="/product/:id" element={<ProductDetailPage />} />
-                      <Route path="/lab-tests" element={<LabTests />} />
-                      <Route path="/abha" element={<AbhaManagement />} />
-                      <Route path="/mobile-view" element={<MobileAbhaCard />} />
-                      <Route path="/insurance" element={<Insurance />} />
-                      <Route path="/symptoms" element={<SymptomChecker />} />
-                      <Route path="/prescription-analysis" element={<PrescriptionAnalysis />} />
-                      <Route path="/blog" element={<HealthBlog />} />
-                      <Route path="/blog/:id" element={<BlogPost />} />
-                      <Route path="/about" element={<About />} />
-                      <Route path="/patient/auth" element={<PatientAuth />} />
-                      <Route path="/doctor/login" element={<DoctorLogin />} />
-                      <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+                    {/* Pharmacist Routes */}
+                    <Route path="/pharmacist/login" element={<PharmacistLogin />} />
+                    <Route path="/pharmacist/register" element={<PharmacistRegister />} />
+                    <Route path="/pharmacist/dashboard" element={<ProtectedRoute allowedRoles={['pharmacist']}><PharmacistDashboard /></ProtectedRoute>} />
+                    <Route path="/pharmacist/orders" element={<ProtectedRoute allowedRoles={['pharmacist']}><PharmacistOrders /></ProtectedRoute>} />
+                    <Route path="/pharmacist/medicines" element={<ProtectedRoute allowedRoles={['pharmacist']}><PharmacistMedicines /></ProtectedRoute>} />
+                    <Route path="/pharmacist/lab-tests" element={<ProtectedRoute allowedRoles={['pharmacist']}><PharmacistLabTests /></ProtectedRoute>} />
+                    <Route path="/pharmacist/analytics" element={<ProtectedRoute allowedRoles={['pharmacist']}><PharmacistAnalytics /></ProtectedRoute>} />
+                    <Route path="/pharmacist/profile" element={<ProtectedRoute allowedRoles={['pharmacist']}><PharmacistProfile /></ProtectedRoute>} />
 
-                      {/* Protected routes */}
-                      <Route path="/records" element={<ProtectedRoute><HealthRecords /></ProtectedRoute>} />
-                      <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-                      <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-                      <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
-                      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                    </Routes>
-                  </main>
+                    {/* Admin Routes */}
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><div>Admin Dashboard Placeholder</div></ProtectedRoute>} />
 
-                  {/* ── Single global Footer for ALL pages ─────────── */}
-                  <Footer />
+                    {/* PATIENT ROUTES (Wrapped in PatientLayout) */}
+                    <Route path="*" element={
+                      <PatientLayout>
+                        <Routes>
+                          <Route path="/" element={<Home />} />
+                          <Route path="/doctors" element={<Doctors />} />
+                          <Route path="/hospitals" element={<Hospitals />} />
+                          <Route path="/pharmacy" element={<Pharmacy />} />
+                          <Route path="/product/:id" element={<ProductDetailPage />} />
+                          <Route path="/lab-tests" element={<LabTests />} />
+                          <Route path="/abha" element={<AbhaManagement />} />
+                          <Route path="/mobile-view" element={<MobileAbhaCard />} />
+                          <Route path="/insurance" element={<Insurance />} />
+                          <Route path="/symptoms" element={<SymptomChecker />} />
+                          <Route path="/prescription-analysis" element={<PrescriptionAnalysis />} />
+                          <Route path="/blog" element={<HealthBlog />} />
+                          <Route path="/blog/:id" element={<BlogPost />} />
+                          <Route path="/about" element={<About />} />
+                          <Route path="/patient/auth" element={<PatientAuth />} />
+
+                          {/* Protected Patient Routes */}
+                          <Route path="/records" element={<ProtectedRoute><HealthRecords /></ProtectedRoute>} />
+                          <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+                          <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+                          <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
+                          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                        </Routes>
+                      </PatientLayout>
+                    } />
+                  </Routes>
                 </div>
               </Router>
             </CartProvider>

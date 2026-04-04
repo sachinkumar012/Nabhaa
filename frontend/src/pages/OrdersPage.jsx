@@ -11,12 +11,16 @@ import { useAuth } from '../context/AuthContext';
 const STATUS_STEPS = ['Pending', 'Processing', 'Shipped', 'Delivered'];
 
 const STATUS_CONFIG = {
-  Pending:    { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-500' },
-  Processing: { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500' },
-  Confirmed:  { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500' },
-  Shipped:    { bg: 'bg-purple-100', text: 'text-purple-800', dot: 'bg-purple-500' },
-  Delivered:  { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500' },
-  Cancelled:  { bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-500' },
+  Pending:            { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-500' },
+  Processing:         { bg: 'bg-blue-100',   text: 'text-blue-800',   dot: 'bg-blue-500' },
+  Accepted:           { bg: 'bg-blue-100',   text: 'text-blue-800',   dot: 'bg-blue-500' },
+  Confirmed:          { bg: 'bg-blue-100',   text: 'text-blue-800',   dot: 'bg-blue-500' },
+  Packed:             { bg: 'bg-purple-100', text: 'text-purple-800', dot: 'bg-purple-500' },
+  Shipped:            { bg: 'bg-purple-100', text: 'text-purple-800', dot: 'bg-purple-500' },
+  'Out for Delivery': { bg: 'bg-purple-100', text: 'text-purple-800', dot: 'bg-purple-500' },
+  Delivered:          { bg: 'bg-green-100',  text: 'text-green-800',  dot: 'bg-green-500' },
+  Cancelled:          { bg: 'bg-red-100',    text: 'text-red-800',    dot: 'bg-red-500' },
+  Rejected:           { bg: 'bg-red-100',    text: 'text-red-800',    dot: 'bg-red-500' },
 };
 
 const STEP_ICONS = {
@@ -93,8 +97,8 @@ const OrdersPage = () => {
     const s = o.status || 'Pending';
     if (activeTab === 'All') return true;
     if (activeTab === 'Delivered') return s === 'Delivered';
-    if (activeTab === 'Cancelled') return s === 'Cancelled';
-    if (activeTab === 'Pending') return ['Pending', 'Processing', 'Confirmed', 'Shipped'].includes(s);
+    if (activeTab === 'Cancelled') return ['Cancelled', 'Rejected'].includes(s);
+    if (activeTab === 'Pending') return ['Pending', 'Processing', 'Confirmed', 'Shipped', 'Accepted', 'Packed', 'Out for Delivery'].includes(s);
     return true;
   });
 
@@ -209,8 +213,16 @@ const OrdersPage = () => {
               const shipping = order.shippingPrice || 0;
               const tax = order.taxPrice || 0;
               const status = order.status || 'Pending';
-              const isCancelled = status === 'Cancelled';
-              const currentStepIdx = STATUS_STEPS.indexOf(status);
+              const isCancelled = ['Cancelled', 'Rejected'].includes(status);
+              
+              const mapStatusToIdx = (s) => {
+                if (['Pending'].includes(s)) return 0;
+                if (['Accepted', 'Processing', 'Confirmed'].includes(s)) return 1;
+                if (['Packed', 'Out for Delivery', 'Shipped'].includes(s)) return 2;
+                if (['Delivered'].includes(s)) return 3;
+                return 0;
+              };
+              const currentStepIdx = mapStatusToIdx(status);
               const createdAt = order.createdAt || order.orderDate;
 
               return (

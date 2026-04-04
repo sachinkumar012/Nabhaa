@@ -59,6 +59,7 @@ export default function Footer() {
               <li><a href="/pharmacy">{t('pharmacy')}</a></li>
               <li><a href="/symptoms">{t('symptoms')}</a></li>
               <li><a href="/about">{t('about')}</a></li>
+              <li className="mt-4 pt-4 border-t border-white/10"><a href="/pharmacist/login" className="text-[#0ea5e9] font-bold">Partner Portal</a></li>
             </ul>
           </div>
 

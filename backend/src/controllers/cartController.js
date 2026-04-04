@@ -133,7 +133,6 @@ const clearCart = async (req, res) => {
 };
 
 /* ── POST /api/cart/sync ────────────────────────────────────────────────── */
-/* Bulk sync: replace cart items entirely (used on login to merge localStorage) */
 const syncCart = async (req, res) => {
     try {
         const userId = getUserId(req);
@@ -146,34 +145,30 @@ const syncCart = async (req, res) => {
         }
 
         const { items = [] } = req.body;
+        if (!Array.isArray(items)) {
+            return res.status(400).json({ message: 'items must be an array' });
+        }
+
         let cart = await Cart.findOne({ userId: userIdStr });
         if (!cart) {
             cart = new Cart({ userId: userIdStr, items: [] });
         }
 
-        /* Merge: skip malformed items */
-        items.forEach(incoming => {
-            try {
-                if (!incoming.productId || !incoming.name || incoming.price == null) return;
-                const existing = cart.items.find(i => i.productId === String(incoming.productId));
-                if (existing) {
-                    existing.quantity = Math.min(99, existing.quantity + (Number(incoming.quantity) || 1));
-                } else {
-                    cart.items.push({
-                        productId: String(incoming.productId),
-                        name: String(incoming.name),
-                        price: Number(incoming.price) || 0,
-                        quantity: Math.min(99, Number(incoming.quantity) || 1),
-                        packSize: String(incoming.packSize || ''),
-                        type: String(incoming.type || 'Medicine'),
-                        image: String(incoming.image || ''),
-                        source: ['normal', 'prescription'].includes(incoming.source) ? incoming.source : 'normal',
-                    });
-                }
-            } catch (itemErr) {
-                console.warn('Skipping invalid cart item:', itemErr.message);
-            }
-        });
+        // True sync: Replace items entirely with validated ones from body
+        const validatedItems = items
+            .filter(i => i.productId && i.name && i.price != null)
+            .map(i => ({
+                productId: String(i.productId),
+                name: String(i.name),
+                price: Number(i.price) || 0,
+                quantity: Math.min(99, Math.max(1, Number(i.quantity) || 1)),
+                packSize: String(i.packSize || ''),
+                type: String(i.type || 'Medicine'),
+                image: String(i.image || ''),
+                source: ['normal', 'prescription'].includes(i.source) ? i.source : 'normal',
+            }));
+
+        cart.items = validatedItems;
 
         await cart.save();
         res.json({ items: cart.items });

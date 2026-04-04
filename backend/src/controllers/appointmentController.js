@@ -43,7 +43,7 @@ exports.bookAppointment = async (req, res) => {
         // Construct the full link. NOTE: using a hardcoded base URL or env var would be better.
         // Assuming client runs on typical Vite port or same domain in prod.
         // We will receive the FE base URL from env or request, but let's default to standard.
-        const frontendUrl = req.headers.origin || 'http://localhost:5173';
+        const frontendUrl = process.env.FRONTEND_URL || req.headers.origin || 'http://localhost:5173';
         const meetingLink = `${frontendUrl}/video-call/${callId}?type=doctor&name=${encodeURIComponent(doctorName)}`;
 
 
@@ -62,7 +62,7 @@ exports.bookAppointment = async (req, res) => {
         });
 
         // 4. Send Email to Doctor
-        const adminUrl = process.env.VITE_ADMIN_URL || 'http://localhost:5174';
+        const adminUrl = process.env.ADMIN_URL || 'http://localhost:5174';
         const doctorMeetingLink = `${adminUrl}/video-call/${callId}`;
 
         if (assignedDoctor && doctorEmail) {
