@@ -135,9 +135,24 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
 };
 
 const sendOtpEmail = async (email, otp) => {
-    // PRIMARY: Gmail SMTP via port 465/SSL (works on Render)
-    console.log(`[EMAIL] Sending OTP to ${email} via Gmail SMTP (port 465/SSL)`);
+    const isProduction = process.env.NODE_ENV === 'production';
+    const resendKey = process.env.RESEND_API_KEY?.trim();
 
+    // PRIMARY on Render/production: Use Resend HTTPS API (SMTP is blocked on Render)
+    if (isProduction && resendKey) {
+        console.log(`[EMAIL] Production mode → Sending OTP to ${email} via Resend API`);
+        try {
+            return await sendOtpEmailViaResend(email, otp);
+        } catch (resendErr) {
+            const body = resendErr.response?.data;
+            const detail = body ? JSON.stringify(body) : resendErr.message;
+            console.error('[EMAIL] Resend API failed:', detail);
+            throw resendErr;
+        }
+    }
+
+    // LOCAL / DEV: Try Gmail SMTP (works fine locally)
+    console.log(`[EMAIL] Dev mode → Sending OTP to ${email} via Gmail SMTP`);
     let lastError = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
         try {
@@ -160,8 +175,7 @@ const sendOtpEmail = async (email, otp) => {
         }
     }
 
-    // FALLBACK: Try Resend if Gmail SMTP failed AND key is available
-    const resendKey = process.env.RESEND_API_KEY?.trim();
+    // FALLBACK: Try Resend if Gmail SMTP failed in dev AND key is available
     if (resendKey) {
         console.log('[EMAIL] Gmail SMTP failed. Falling back to Resend API...');
         try {
@@ -173,7 +187,7 @@ const sendOtpEmail = async (email, otp) => {
         }
     }
 
-    // Both methods failed — throw the original SMTP error
+    // All methods failed
     throw lastError;
 };
 
