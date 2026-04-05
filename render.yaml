@@ -11,9 +11,13 @@ services:
         value: production
       - key: PORT
         value: 10000
-      # Add the following in Render Dashboard → Environment:
-      # MONGODB_URI, JWT_SECRET, GEMINI_API_KEY, SMTP_USER, SMTP_PASS,
-      # RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, CORS_ORIGIN
+      # Set value in Render Dashboard (secret) — do not commit real keys
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        value: "Nabha Healthcare <onboarding@resend.dev>"
+      # Also set in Dashboard: MONGODB_URI, JWT_SECRET, GEMINI_API_KEY, CORS_ORIGIN,
+      # RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, optional SMTP_*
     healthCheckPath: /
 
   # ── Frontend (Static Site) ───────────────────────────────────────────────

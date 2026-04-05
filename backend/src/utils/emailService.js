@@ -1,30 +1,72 @@
 const nodemailer = require('nodemailer');
+const axios = require('axios');
+
+const otpLoginEmailHtml = (otp) => `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                    <h2 style="color: #115E59;">Login Verification Code</h2>
+                    <p>Hello,</p>
+                    <p>Your OTP for logging into Nabha Healthcare is:</p>
+                    
+                    <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                        <h1 style="color: #15803d; letter-spacing: 5px; margin: 0;">${otp}</h1>
+                    </div>
+
+                    <p>This code is valid for 10 minutes. Do not share this code with anyone.</p>
+                    <p>Best regards,<br>Nabha Healthcare Team</p>
+                </div>
+            `;
+
+/**
+ * Send OTP via Resend HTTPS API (works on Render; Gmail SMTP often times out from cloud hosts).
+ * Set RESEND_API_KEY in env. Use RESEND_FROM (e.g. "Nabha <otp@yourdomain.com>") after verifying domain in Resend.
+ */
+const sendOtpEmailViaResend = async (email, otp) => {
+    const apiKey = process.env.RESEND_API_KEY.trim();
+    const from =
+        process.env.RESEND_FROM?.trim() || 'Nabha Healthcare <onboarding@resend.dev>';
+
+    const { data } = await axios.post(
+        'https://api.resend.com/emails',
+        {
+            from,
+            to: email,
+            subject: 'Your Login OTP - Nabha Healthcare',
+            html: otpLoginEmailHtml(otp),
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            timeout: 20000,
+        }
+    );
+
+    console.log('[EMAIL] OTP sent via Resend, id:', data?.id);
+    return true;
+};
 
 /**
  * Robust transporter creation with improved defaults for cloud hosting (Render)
  */
 const createTransporter = () => {
-    const port = Number(process.env.SMTP_PORT) || 587;
-    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-    
     // Check for required environment variables
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
         console.error("CRITICAL: SMTP_USER or SMTP_PASS is not configured!");
         throw new Error('Email service configuration missing. Please set SMTP_USER and SMTP_PASS.');
     }
 
-    const isGmail = host.includes('gmail.com');
-
+    const portStr = process.env.SMTP_PORT || '587';
+    
     const config = {
-        host: isGmail ? undefined : host,
-        port: isGmail ? undefined : port,
-        service: isGmail ? 'gmail' : undefined,
-        secure: isGmail ? true : port === 465, // Fix: Gmail uses secure true (port 465 implicit)
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(portStr),
+        secure: parseInt(portStr) === 465, // Use false for 587, true for 465
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS
         },
-        connectionTimeout: 20000, // Increased to 20 seconds
+        connectionTimeout: 20000, 
         greetingTimeout: 20000,
         socketTimeout: 30000,
         logger: true,
@@ -76,35 +118,33 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
 };
 
 const sendOtpEmail = async (email, otp) => {
+    if (process.env.RESEND_API_KEY?.trim()) {
+        try {
+            console.log(`[EMAIL] Sending OTP to ${email} via Resend API`);
+            return await sendOtpEmailViaResend(email, otp);
+        } catch (err) {
+            const detail = err.response?.data
+                ? JSON.stringify(err.response.data)
+                : err.message;
+            console.error('[EMAIL] Resend failed, falling back to SMTP...', detail);
+            // Do not throw; let execution continue to the SMTP fallback loop below
+        }
+    }
+
     let attempts = 0;
     const maxAttempts = 2;
 
     while (attempts < maxAttempts) {
         try {
             attempts++;
-            console.log(`[EMAIL] Attempt ${attempts}: Sending OTP to ${email}`);
+            console.log(`[EMAIL] Attempt ${attempts}: Sending OTP to ${email} (SMTP)`);
             const transporter = createTransporter();
-
-            const message = `
-                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-                    <h2 style="color: #115E59;">Login Verification Code</h2>
-                    <p>Hello,</p>
-                    <p>Your OTP for logging into Nabha Healthcare is:</p>
-                    
-                    <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                        <h1 style="color: #15803d; letter-spacing: 5px; margin: 0;">${otp}</h1>
-                    </div>
-
-                    <p>This code is valid for 10 minutes. Do not share this code with anyone.</p>
-                    <p>Best regards,<br>Nabha Healthcare Team</p>
-                </div>
-            `;
 
             const info = await transporter.sendMail({
                 from: `"Nabha Healthcare" <${process.env.SMTP_USER}>`,
                 to: email,
                 subject: "Your Login OTP - Nabha Healthcare",
-                html: message
+                html: otpLoginEmailHtml(otp)
             });
 
             console.log("[EMAIL] OTP Sent Successfully. MessageId: %s", info.messageId);
