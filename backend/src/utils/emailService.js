@@ -1,23 +1,45 @@
 const nodemailer = require('nodemailer');
 
+/**
+ * Robust transporter creation with improved defaults for cloud hosting (Render)
+ */
+const createTransporter = () => {
+    const port = Number(process.env.SMTP_PORT) || 587;
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    
+    // Check for required environment variables
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.error("CRITICAL: SMTP_USER or SMTP_PASS is not configured!");
+        throw new Error('Email service configuration missing. Please set SMTP_USER and SMTP_PASS.');
+    }
+
+    const isGmail = host.includes('gmail.com');
+
+    const config = {
+        host: isGmail ? undefined : host,
+        port: isGmail ? undefined : port,
+        service: isGmail ? 'gmail' : undefined,
+        secure: isGmail ? false : port === 465, // For Gmail service, let nodemailer handle it
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+        },
+        connectionTimeout: 20000, // Increased to 20 seconds
+        greetingTimeout: 20000,
+        socketTimeout: 30000,
+        logger: true,
+        debug: true,
+        tls: {
+            rejectUnauthorized: false
+        }
+    };
+
+    return nodemailer.createTransport(config);
+};
+
 const sendAppointmentEmail = async (email, appointmentDetails) => {
     try {
-        const port = Number(process.env.SMTP_PORT);
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: port,
-            secure: port === 465,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            },
-            connectionTimeout: 10000, // 10 seconds
-            logger: true,
-            debug: true,
-            tls: {
-                rejectUnauthorized: false // Helps if certificates are weird
-            }
-        });
+        const transporter = createTransporter();
 
         const message = `
             <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
@@ -45,83 +67,63 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
             html: message
         });
 
-        console.log("Message sent: %s", info.messageId);
+        console.log("Appointment email sent: %s", info.messageId);
         return true;
     } catch (error) {
-        console.error("Error sending email:", error);
+        console.error("Error sending appointment email:", error);
         return false;
     }
 };
 
 const sendOtpEmail = async (email, otp) => {
-    try {
-        console.log("DEBUG OTP:", otp);
+    let attempts = 0;
+    const maxAttempts = 2;
 
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            console.error("FATAL: SMTP_USER or SMTP_PASS is missing in environment variables!");
-            throw new Error('FATAL: SMTP environment variables missing on server');
-        }
+    while (attempts < maxAttempts) {
+        try {
+            attempts++;
+            console.log(`[EMAIL] Attempt ${attempts}: Sending OTP to ${email}`);
+            const transporter = createTransporter();
 
-        const port = Number(process.env.SMTP_PORT) || 587;
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: port,
-            secure: port === 465,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            },
-            connectionTimeout: 10000,
-            logger: true,
-            debug: true,
-            tls: {
-                rejectUnauthorized: false
-            }
-        });
+            const message = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                    <h2 style="color: #115E59;">Login Verification Code</h2>
+                    <p>Hello,</p>
+                    <p>Your OTP for logging into Nabha Healthcare is:</p>
+                    
+                    <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                        <h1 style="color: #15803d; letter-spacing: 5px; margin: 0;">${otp}</h1>
+                    </div>
 
-        const message = `
-            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-                <h2 style="color: #115E59;">Login Verification Code</h2>
-                <p>Hello,</p>
-                <p>Your OTP for logging into Nabha Healthcare is:</p>
-                
-                <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                    <h1 style="color: #15803d; letter-spacing: 5px; margin: 0;">${otp}</h1>
+                    <p>This code is valid for 10 minutes. Do not share this code with anyone.</p>
+                    <p>Best regards,<br>Nabha Healthcare Team</p>
                 </div>
+            `;
 
-                <p>This code is valid for 10 minutes. Do not share this code with anyone.</p>
-                <p>Best regards,<br>Nabha Healthcare Team</p>
-            </div>
-        `;
+            const info = await transporter.sendMail({
+                from: `"Nabha Healthcare" <${process.env.SMTP_USER}>`,
+                to: email,
+                subject: "Your Login OTP - Nabha Healthcare",
+                html: message
+            });
 
-        const info = await transporter.sendMail({
-            from: `"Nabha Healthcare" <${process.env.SMTP_USER}>`,
-            to: email,
-            subject: "Your Login OTP - Nabha Healthcare",
-            html: message
-        });
-
-        console.log("OTP Email sent: %s", info.messageId);
-        return true;
-    } catch (error) {
-        console.error("Error sending OTP email:", error);
-        throw error;
+            console.log("[EMAIL] OTP Sent Successfully. MessageId: %s", info.messageId);
+            return true;
+        } catch (error) {
+            console.error(`[EMAIL] Attempt ${attempts} FAILED:`, error.message);
+            if (attempts >= maxAttempts) {
+                console.error("[EMAIL] All attempts failed for OTP email.");
+                throw error;
+            }
+            // Wait 2 seconds before retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
     }
 };
 
 const sendLabBookingConfirmation = async (email, details) => {
     try {
-        const port = Number(process.env.SMTP_PORT);
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: port,
-            secure: port === 465,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            },
-            tls: { rejectUnauthorized: false }
-        });
+        const transporter = createTransporter();
 
         const message = `
             <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
@@ -158,17 +160,7 @@ const sendLabBookingConfirmation = async (email, details) => {
 
 const sendVideoConsultationEmail = async (doctorEmail, details) => {
     try {
-        const port = Number(process.env.SMTP_PORT);
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: port,
-            secure: port === 465,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            },
-            tls: { rejectUnauthorized: false }
-        });
+        const transporter = createTransporter();
 
         const message = `
             <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
@@ -213,17 +205,7 @@ const sendVideoConsultationEmail = async (doctorEmail, details) => {
 
 const sendCallbackRequest = async (phone) => {
     try {
-        const port = Number(process.env.SMTP_PORT);
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: port,
-            secure: port === 465,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            },
-            tls: { rejectUnauthorized: false }
-        });
+        const transporter = createTransporter();
 
         const message = `
             <div style="font-family: Arial, sans-serif; padding: 24px; color: #333; max-width: 500px;">
@@ -256,17 +238,7 @@ const sendCallbackRequest = async (phone) => {
 
 const sendInsuranceConfirmation = async (email, details, pdfBuffer) => {
     try {
-        const port = Number(process.env.SMTP_PORT);
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: port,
-            secure: port === 465,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            },
-            tls: { rejectUnauthorized: false }
-        });
+        const transporter = createTransporter();
 
         const message = `
             <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto;">

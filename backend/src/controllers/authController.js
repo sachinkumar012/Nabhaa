@@ -1,6 +1,7 @@
 const Otp = require('../models/otpModel');
 const Customer = require('../models/customerModel');
 const { sendOtpEmail } = require('../utils/emailService');
+const { sendOtpSms } = require('../utils/smsService');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
@@ -23,43 +24,73 @@ const generateOtp = () => {
  */
 const sendOtp = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, phone } = req.body;
 
-        if (!email) {
-            return res.status(400).json({ success: false, message: 'Email is required' });
+        if (!email && !phone) {
+            return res.status(400).json({ success: false, message: 'Email or Phone Number is required' });
         }
 
-        // Delete any existing OTPs for this email to ensure only one valid OTP exists
-        await Otp.deleteMany({ email });
+        const identifier = email || phone;
+        const isEmail = !!email;
+
+        // Delete any existing OTPs for this identifier to ensure only one valid OTP exists
+        await Otp.deleteMany({ email: identifier });
 
         const otp = generateOtp();
 
         // Create new OTP
         await Otp.create({
-            email,
+            email: identifier,
             otp
         });
 
-        // Send Email
-        const emailSent = await sendOtpEmail(email, otp);
+        let deliverySuccess = false;
+        let errorMessage = '';
 
-        if (!emailSent) {
-            // Build redundancy?
-            // return res.status(500).json({ success: false, message: 'Failed to send OTP email' });
-            // For now, return error
-            throw new Error('Failed to send OTP email');
+        if (isEmail) {
+            try {
+                deliverySuccess = await sendOtpEmail(email, otp);
+            } catch (err) {
+                console.error('[AUTH] Email sending failed:', err.message);
+                errorMessage = err.message;
+            }
+        } else if (phone) {
+            deliverySuccess = await sendOtpSms(phone, otp);
+            if (!deliverySuccess) errorMessage = 'SMS delivery failed';
+        }
+
+        if (!deliverySuccess) {
+            // Check if it's a configuration error
+            if (errorMessage.includes('configuration missing')) {
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Backend Configuration Error: Email service is not configured on the server. Please set SMTP_USER and SMTP_PASS.',
+                    error: errorMessage
+                });
+            }
+
+            return res.status(500).json({ 
+                success: false, 
+                message: `Failed to send OTP. ${errorMessage || 'Please try again later.'}` 
+            });
         }
 
         res.status(200).json({
             success: true,
-            message: `OTP sent successfully to ${email}`
+            message: `OTP sent successfully to ${identifier}`
         });
 
     } catch (error) {
-        console.error('Send OTP Error:', error);
+        console.error('-------------------------------------------');
+        console.error('FATAL SEND-OTP ERROR:', {
+            message: error.message,
+            stack: error.stack
+        });
+        console.error('-------------------------------------------');
+        
         res.status(500).json({
             success: false,
-            message: `Server Error: ${error.message}`
+            message: `Internal Server Error: ${error.message || 'Failed to process request'}`,
         });
     }
 };

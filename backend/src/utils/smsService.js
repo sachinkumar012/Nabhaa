@@ -36,4 +36,40 @@ const sendAppointmentSMS = async (phoneNumber, appointmentDetails) => {
     }
 };
 
-module.exports = { sendAppointmentSMS };
+const sendOtpSms = async (phoneNumber, otp) => {
+    try {
+        const apiKey = process.env.FAST2SMS_API_KEY;
+
+        if (!apiKey) {
+            console.warn('[SMS] FAST2SMS_API_KEY missing. Cannot send OTP via SMS.');
+            return false;
+        }
+
+        const cleanPhone = phoneNumber.replace(/\D/g, '').slice(-10);
+        if (cleanPhone.length !== 10) {
+            console.warn('[SMS] Invalid phone number for SMS:', phoneNumber);
+            return false;
+        }
+
+        const message = `Your OTP for Nabha Healthcare login is ${otp}. Valid for 10 minutes. Please do not share it.`;
+
+        const response = await axios.post('https://www.fast2sms.com/dev/bulkV2', {
+            message: message,
+            language: 'english',
+            route: 'q',
+            numbers: cleanPhone
+        }, {
+            headers: {
+                authorization: apiKey
+            }
+        });
+
+        console.log('[SMS] OTP SMS Response:', response.data);
+        return response.data.return;
+    } catch (error) {
+        console.error('[SMS] FATAL OTP SMS Error:', error.message);
+        return false;
+    }
+};
+
+module.exports = { sendAppointmentSMS, sendOtpSms };
