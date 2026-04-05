@@ -60,18 +60,32 @@ const sendOtp = async (req, res) => {
         }
 
         if (!deliverySuccess) {
-            // Check if it's a configuration error
-            if (errorMessage.includes('configuration missing')) {
-                return res.status(500).json({ 
-                    success: false, 
-                    message: 'Backend Configuration Error: Email service is not configured on the server. Please set SMTP_USER and SMTP_PASS.',
-                    error: errorMessage
+            await Otp.deleteMany({ email: identifier });
+
+            if (
+                errorMessage.includes('not configured for production') ||
+                errorMessage.includes('Email is not configured')
+            ) {
+                return res.status(503).json({
+                    success: false,
+                    message: errorMessage,
+                    code: 'EMAIL_NOT_CONFIGURED',
                 });
             }
 
-            return res.status(500).json({ 
-                success: false, 
-                message: `Failed to send OTP. ${errorMessage || 'Please try again later.'}` 
+            if (errorMessage.includes('configuration missing')) {
+                return res.status(503).json({
+                    success: false,
+                    message:
+                        'SMTP is not configured. For local development add SMTP_USER and SMTP_PASS to backend/.env.',
+                    code: 'SMTP_NOT_CONFIGURED',
+                });
+            }
+
+            return res.status(502).json({
+                success: false,
+                message: `Failed to send OTP. ${errorMessage || 'Please try again later.'}`,
+                code: 'EMAIL_DELIVERY_FAILED',
             });
         }
 

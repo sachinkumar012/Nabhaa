@@ -26,6 +26,8 @@ export default function AuthSidebar() {
             if (response.data.success) {
                 toast.success(response.data.message);
                 setStep('otp');
+            } else {
+                toast.error(response.data?.message || 'Failed to send OTP.');
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to send OTP. Please try again later.');
@@ -166,7 +168,12 @@ export default function AuthSidebar() {
                                         <button onClick={handleBack} className="text-gray-500 hover:text-gray-700 font-medium">
                                             Change Email
                                         </button>
-                                        <button className="text-[#1A73E8] font-bold hover:underline">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSendOtp()}
+                                            disabled={isLoading}
+                                            className="text-[#1A73E8] font-bold hover:underline disabled:opacity-50"
+                                        >
                                             Resend OTP
                                         </button>
                                     </div>

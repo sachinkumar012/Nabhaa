@@ -29,7 +29,7 @@ const sendOtpEmailViaResend = async (email, otp) => {
         'https://api.resend.com/emails',
         {
             from,
-            to: email,
+            to: [email],
             subject: 'Your Login OTP - Nabha Healthcare',
             html: otpLoginEmailHtml(otp),
         },
@@ -69,8 +69,8 @@ const createTransporter = () => {
         connectionTimeout: 20000, 
         greetingTimeout: 20000,
         socketTimeout: 30000,
-        logger: true,
-        debug: true,
+        logger: process.env.NODE_ENV !== 'production',
+        debug: process.env.NODE_ENV !== 'production',
         tls: {
             rejectUnauthorized: false
         }
@@ -118,8 +118,10 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
 };
 
 const sendOtpEmail = async (email, otp) => {
+    const resendKey = process.env.RESEND_API_KEY?.trim();
+
     // When RESEND_API_KEY is set, use only Resend (SMTP from Render → Gmail usually times out).
-    if (process.env.RESEND_API_KEY?.trim()) {
+    if (resendKey) {
         console.log(`[EMAIL] Sending OTP to ${email} via Resend API`);
         try {
             return await sendOtpEmailViaResend(email, otp);
@@ -133,6 +135,14 @@ const sendOtpEmail = async (email, otp) => {
                 detail;
             throw new Error(msg);
         }
+    }
+
+    // Production hosts (e.g. Render) typically cannot reach Gmail SMTP — fail fast with a clear message.
+    if (process.env.NODE_ENV === 'production') {
+        const hint =
+            'Set RESEND_API_KEY (and RESEND_FROM) in Render → Environment, then redeploy.';
+        console.error('[EMAIL]', hint);
+        throw new Error(`Email is not configured for production. ${hint}`);
     }
 
     let attempts = 0;

@@ -16,6 +16,13 @@ app.use(cors({
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ success: false, message: 'Invalid JSON in request body' });
+    }
+    next(err);
+});
 app.use(helmet({
     // Allow images to be displayed from external sources (needed for prescription preview)
     crossOriginEmbedderPolicy: false,

@@ -291,13 +291,28 @@ const Pharmacy = () => {
     e.preventDefault();
     if (!emailOtp) { alert('Please enter your email address.'); return; }
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/send-otp`, {
+      const base = import.meta.env.VITE_API_URL;
+      if (!base) {
+        alert('Missing VITE_API_URL. Set it in frontend .env for production.');
+        return;
+      }
+      const res = await fetch(`${base}/api/auth/send-otp`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailOtp }),
       });
-      const data = await res.json();
-      if (data.success) { setIsOtpSent(true); alert(data.message); }
-      else alert(data.message || 'Failed to send OTP.');
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        alert('Invalid response from server. Please try again.');
+        return;
+      }
+      if (res.ok && data.success) {
+        setIsOtpSent(true);
+        alert(data.message);
+      } else {
+        alert(data.message || `Failed to send OTP (${res.status}).`);
+      }
     } catch { alert('Network error. Please try again.'); }
   };
 
