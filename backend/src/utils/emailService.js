@@ -62,35 +62,37 @@ const sendOtpEmailViaResend = async (email, otp) => {
 };
 
 /**
- * Robust transporter creation with improved defaults for cloud hosting (Render)
+ * Transporter using Gmail SMTP over port 465 (SSL) — required for Render/cloud hosts.
+ * Port 587 (STARTTLS) is blocked by Render; port 465 with secure:true works reliably.
  */
 const createTransporter = () => {
-    // Check for required environment variables
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.error("CRITICAL: SMTP_USER or SMTP_PASS is not configured!");
+        console.error('[EMAIL] CRITICAL: SMTP_USER or SMTP_PASS is not configured!');
         throw new Error('Email service configuration missing. Please set SMTP_USER and SMTP_PASS.');
     }
 
-    const portStr = process.env.SMTP_PORT || '587';
-    
+    // Force port 465 + SSL on Render (production). Port 587/STARTTLS is blocked there.
+    const isProduction = process.env.NODE_ENV === 'production';
+    const port = isProduction ? 465 : parseInt(process.env.SMTP_PORT || '587');
+    const secure = isProduction ? true : port === 465;
+
     const config = {
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(portStr),
-        secure: parseInt(portStr) === 465, // Use false for 587, true for 465
+        port,
+        secure,
         auth: {
             user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
+            pass: process.env.SMTP_PASS,
         },
-        connectionTimeout: 20000, 
-        greetingTimeout: 20000,
+        connectionTimeout: 25000,
+        greetingTimeout: 25000,
         socketTimeout: 30000,
-        logger: process.env.NODE_ENV !== 'production',
-        debug: process.env.NODE_ENV !== 'production',
         tls: {
-            rejectUnauthorized: false
-        }
+            rejectUnauthorized: false,
+        },
     };
 
+    console.log(`[EMAIL] Transporter → host:${config.host} port:${config.port} secure:${config.secure}`);
     return nodemailer.createTransport(config);
 };
 
@@ -133,61 +135,46 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
 };
 
 const sendOtpEmail = async (email, otp) => {
-    const resendKey = process.env.RESEND_API_KEY?.trim();
+    // PRIMARY: Gmail SMTP via port 465/SSL (works on Render)
+    console.log(`[EMAIL] Sending OTP to ${email} via Gmail SMTP (port 465/SSL)`);
 
-    // When RESEND_API_KEY is set, use only Resend (SMTP from Render → Gmail usually times out).
-    if (resendKey) {
-        console.log(`[EMAIL] Sending OTP to ${email} via Resend API`);
+    let lastError = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-            return await sendOtpEmailViaResend(email, otp);
-        } catch (err) {
-            const body = err.response?.data;
-            const detail = body ? JSON.stringify(body) : err.message;
-            console.error('[EMAIL] Resend failed:', detail);
-            const msg =
-                (typeof body?.message === 'string' && body.message) ||
-                (typeof body?.name === 'string' && body.name) ||
-                detail;
-            throw new Error(msg);
-        }
-    }
-
-    // Production hosts (e.g. Render) typically cannot reach Gmail SMTP — fail fast with a clear message.
-    if (process.env.NODE_ENV === 'production') {
-        const hint =
-            'Set RESEND_API_KEY (and RESEND_FROM) in Render → Environment, then redeploy.';
-        console.error('[EMAIL]', hint);
-        throw new Error(`Email is not configured for production. ${hint}`);
-    }
-
-    let attempts = 0;
-    const maxAttempts = 2;
-
-    while (attempts < maxAttempts) {
-        try {
-            attempts++;
-            console.log(`[EMAIL] Attempt ${attempts}: Sending OTP to ${email} (SMTP)`);
+            console.log(`[EMAIL] Attempt ${attempt}/2`);
             const transporter = createTransporter();
 
             const info = await transporter.sendMail({
                 from: `"Nabha Healthcare" <${process.env.SMTP_USER}>`,
                 to: email,
-                subject: "Your Login OTP - Nabha Healthcare",
-                html: otpLoginEmailHtml(otp)
+                subject: 'Your Login OTP - Nabha Healthcare',
+                html: otpLoginEmailHtml(otp),
             });
 
-            console.log("[EMAIL] OTP Sent Successfully. MessageId: %s", info.messageId);
+            console.log('[EMAIL] OTP sent successfully via Gmail. MessageId:', info.messageId);
             return true;
-        } catch (error) {
-            console.error(`[EMAIL] Attempt ${attempts} FAILED:`, error.message);
-            if (attempts >= maxAttempts) {
-                console.error("[EMAIL] All attempts failed for OTP email.");
-                throw error;
-            }
-            // Wait 2 seconds before retry
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (err) {
+            lastError = err;
+            console.error(`[EMAIL] Attempt ${attempt} FAILED:`, err.message);
+            if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
         }
     }
+
+    // FALLBACK: Try Resend if Gmail SMTP failed AND key is available
+    const resendKey = process.env.RESEND_API_KEY?.trim();
+    if (resendKey) {
+        console.log('[EMAIL] Gmail SMTP failed. Falling back to Resend API...');
+        try {
+            return await sendOtpEmailViaResend(email, otp);
+        } catch (resendErr) {
+            const body = resendErr.response?.data;
+            const detail = body ? JSON.stringify(body) : resendErr.message;
+            console.error('[EMAIL] Resend fallback also failed:', detail);
+        }
+    }
+
+    // Both methods failed — throw the original SMTP error
+    throw lastError;
 };
 
 const sendLabBookingConfirmation = async (email, details) => {
