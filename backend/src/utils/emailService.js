@@ -19,7 +19,7 @@ const createTransporter = () => {
         host: isGmail ? undefined : host,
         port: isGmail ? undefined : port,
         service: isGmail ? 'gmail' : undefined,
-        secure: isGmail ? false : port === 465, // For Gmail service, let nodemailer handle it
+        secure: isGmail ? true : port === 465, // Fix: Gmail uses secure true (port 465 implicit)
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS
