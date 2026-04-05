@@ -118,16 +118,20 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
 };
 
 const sendOtpEmail = async (email, otp) => {
+    // When RESEND_API_KEY is set, use only Resend (SMTP from Render → Gmail usually times out).
     if (process.env.RESEND_API_KEY?.trim()) {
+        console.log(`[EMAIL] Sending OTP to ${email} via Resend API`);
         try {
-            console.log(`[EMAIL] Sending OTP to ${email} via Resend API`);
             return await sendOtpEmailViaResend(email, otp);
         } catch (err) {
-            const detail = err.response?.data
-                ? JSON.stringify(err.response.data)
-                : err.message;
-            console.error('[EMAIL] Resend failed, falling back to SMTP...', detail);
-            // Do not throw; let execution continue to the SMTP fallback loop below
+            const body = err.response?.data;
+            const detail = body ? JSON.stringify(body) : err.message;
+            console.error('[EMAIL] Resend failed:', detail);
+            const msg =
+                (typeof body?.message === 'string' && body.message) ||
+                (typeof body?.name === 'string' && body.name) ||
+                detail;
+            throw new Error(msg);
         }
     }
 
