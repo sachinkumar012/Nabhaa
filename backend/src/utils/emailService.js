@@ -129,13 +129,6 @@ const sendViaSMTP = async (mailOptions) => {
 // ─── OTP Email with Fallback ───────────────────────────────────────────────────
 
 const sendOtpEmail = async (email, otp) => {
-  const mailOptions = {
-    from: `"Nabha Healthcare" <${process.env.SMTP_USER?.trim() || process.env.RESEND_FROM || "noreply@nabha.com"}>`,
-    to: email,
-    subject: "Your Login OTP - Nabha Healthcare",
-    html: otpLoginEmailHtml(otp),
-  };
-
   console.log(`[EMAIL] Attempting to send OTP to ${email}`);
 
   // 1. Try SMTP first (if configured)
@@ -143,7 +136,13 @@ const sendOtpEmail = async (email, otp) => {
 
   if (smtpConfigured) {
     try {
-      await sendViaSMTP(mailOptions);
+      const smtpMailOptions = {
+        from: `"Nabha Healthcare" <${process.env.SMTP_USER?.trim()}>`,
+        to: email,
+        subject: "Your Login OTP - Nabha Healthcare",
+        html: otpLoginEmailHtml(otp),
+      };
+      await sendViaSMTP(smtpMailOptions);
       return true;
     } catch (smtpError) {
       console.warn("[EMAIL] SMTP failed, attempting Resend fallback...");
@@ -152,8 +151,14 @@ const sendOtpEmail = async (email, otp) => {
     console.log("[EMAIL] SMTP not configured, attempting Resend...");
   }
 
-  // 2. Try Resend as fallback
-  const resendSuccess = await sendViaResend(mailOptions);
+  // 2. Try Resend as fallback (use RESEND_FROM which is verified)
+  const resendMailOptions = {
+    from: process.env.RESEND_FROM?.trim() || "Nabha <onboarding@resend.dev>",
+    to: email,
+    subject: "Your Login OTP - Nabha Healthcare",
+    html: otpLoginEmailHtml(otp),
+  };
+  const resendSuccess = await sendViaResend(resendMailOptions);
   if (resendSuccess) return true;
 
   // 3. If both failed
@@ -167,8 +172,13 @@ const sendOtpEmail = async (email, otp) => {
 // ─── Appointment Email ────────────────────────────────────────────────────────
 
 const sendAppointmentEmail = async (email, appointmentDetails) => {
+  const fromAddress =
+    process.env.SMTP_USER?.trim() ||
+    process.env.RESEND_FROM?.trim() ||
+    "noreply@nabha.com";
+
   const mailOptions = {
-    from: `"Nabha Healthcare" <${process.env.SMTP_USER?.trim()}>`,
+    from: `"Nabha Healthcare" <${fromAddress}>`,
     to: email,
     subject: "Appointment Confirmation - Nabha Healthcare",
     html: `
@@ -205,8 +215,13 @@ const sendAppointmentEmail = async (email, appointmentDetails) => {
 // ─── Lab Booking Email ────────────────────────────────────────────────────────
 
 const sendLabBookingConfirmation = async (email, details) => {
+  const fromAddress =
+    process.env.SMTP_USER?.trim() ||
+    process.env.RESEND_FROM?.trim() ||
+    "noreply@nabha.com";
+
   const mailOptions = {
-    from: `"Nabha Healthcare" <${process.env.SMTP_USER?.trim()}>`,
+    from: `"Nabha Healthcare" <${fromAddress}>`,
     to: email,
     subject: "Lab Test Booking Confirmed - Nabha Healthcare",
     html: `
@@ -242,8 +257,13 @@ const sendLabBookingConfirmation = async (email, details) => {
 // ─── Video Consultation Email ─────────────────────────────────────────────────
 
 const sendVideoConsultationEmail = async (doctorEmail, details) => {
+  const fromAddress =
+    process.env.SMTP_USER?.trim() ||
+    process.env.RESEND_FROM?.trim() ||
+    "noreply@nabha.com";
+
   const mailOptions = {
-    from: `"Nabha Healthcare" <${process.env.SMTP_USER?.trim()}>`,
+    from: `"Nabha Healthcare" <${fromAddress}>`,
     to: doctorEmail,
     subject: `Video Consultation Request - ${details.patientName}`,
     html: `
@@ -285,9 +305,14 @@ const sendVideoConsultationEmail = async (doctorEmail, details) => {
 // ─── Callback Request Email ───────────────────────────────────────────────────
 
 const sendCallbackRequest = async (phone) => {
+  const fromAddress =
+    process.env.SMTP_USER?.trim() ||
+    process.env.RESEND_FROM?.trim() ||
+    "noreply@nabha.com";
+
   const mailOptions = {
-    from: `"Nabha Healthcare" <${process.env.SMTP_USER?.trim()}>`,
-    to: process.env.SMTP_USER?.trim(),
+    from: `"Nabha Healthcare" <${fromAddress}>`,
+    to: process.env.SMTP_USER?.trim() || "support@nabha.com",
     subject: `📞 Callback Request: +91 ${phone} — Nabha Lab Tests`,
     html: `
             <div style="font-family: Arial, sans-serif; padding: 24px; color: #333; max-width: 500px;">
@@ -320,8 +345,13 @@ const sendCallbackRequest = async (phone) => {
 // ─── Insurance Confirmation Email ─────────────────────────────────────────────
 
 const sendInsuranceConfirmation = async (email, details, pdfBuffer) => {
+  const fromAddress =
+    process.env.SMTP_USER?.trim() ||
+    process.env.RESEND_FROM?.trim() ||
+    "noreply@nabha.com";
+
   const mailOptions = {
-    from: `"Nabha Healthcare" <${process.env.SMTP_USER?.trim()}>`,
+    from: `"Nabha Healthcare" <${fromAddress}>`,
     to: email,
     subject: `Health Insurance Policy Activated - ${details.policyNumber}`,
     html: `
