@@ -21,29 +21,44 @@ const otpLoginEmailHtml = (otp) => `
  * Set RESEND_API_KEY in env. Use RESEND_FROM (e.g. "Nabha <otp@yourdomain.com>") after verifying domain in Resend.
  */
 const sendOtpEmailViaResend = async (email, otp) => {
-    const apiKey = process.env.RESEND_API_KEY.trim();
+    const apiKey = process.env.RESEND_API_KEY?.trim();
+
+    if (!apiKey) {
+        console.error('[EMAIL] RESEND_API_KEY is not set in environment variables!');
+        throw new Error('RESEND_API_KEY is missing. Please set it in Render → Environment.');
+    }
+
     const from =
         process.env.RESEND_FROM?.trim() || 'Nabha Healthcare <onboarding@resend.dev>';
 
-    const { data } = await axios.post(
-        'https://api.resend.com/emails',
-        {
-            from,
-            to: [email],
-            subject: 'Your Login OTP - Nabha Healthcare',
-            html: otpLoginEmailHtml(otp),
-        },
-        {
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-            },
-            timeout: 20000,
-        }
-    );
+    console.log(`[EMAIL] Calling Resend API → from: ${from}, to: ${email}`);
 
-    console.log('[EMAIL] OTP sent via Resend, id:', data?.id);
-    return true;
+    try {
+        const { data, status } = await axios.post(
+            'https://api.resend.com/emails',
+            {
+                from,
+                to: [email],
+                subject: 'Your Login OTP - Nabha Healthcare',
+                html: otpLoginEmailHtml(otp),
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                timeout: 20000,
+            }
+        );
+
+        console.log(`[EMAIL] Resend API success (HTTP ${status}), id:`, data?.id);
+        return true;
+    } catch (err) {
+        const httpStatus = err.response?.status;
+        const body = err.response?.data;
+        console.error(`[EMAIL] Resend API error (HTTP ${httpStatus}):`, JSON.stringify(body) || err.message);
+        throw err;
+    }
 };
 
 /**

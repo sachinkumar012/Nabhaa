@@ -82,7 +82,7 @@ const sendOtp = async (req, res) => {
                 });
             }
 
-            return res.status(502).json({
+            return res.status(503).json({
                 success: false,
                 message: `Failed to send OTP. ${errorMessage || 'Please try again later.'}`,
                 code: 'EMAIL_DELIVERY_FAILED',
