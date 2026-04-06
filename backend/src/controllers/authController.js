@@ -74,23 +74,17 @@ const sendOtp = async (req, res) => {
         fast2smsConfigured: !!process.env.FAST2SMS_API_KEY,
       });
 
-      if (
-        errorMessage.includes("not configured") ||
-        errorMessage.includes("configuration")
-      ) {
-        return res.status(503).json({
-          success: false,
-          message: "Email service configuration issue. Please contact support.",
-          code: "EMAIL_SERVICE_UNAVAILABLE",
-          details:
-            process.env.NODE_ENV === "development" ? errorMessage : undefined,
-        });
-      }
+      // Render/Resend free-tier fallback: Instead of hard-failing and blocking login,
+      // log the OTP to the backend console so the developer can evaluate the app
+      console.warn("\n=======================================================");
+      console.warn("⚠️  EMAIL BLOCKED BY RENDER / RESEND FREE TIER LIMITS");
+      console.warn(`[DEV TEST] The OTP for ${identifier} is: >> ${otp} <<`);
+      console.warn("=======================================================\n");
 
-      return res.status(503).json({
-        success: false,
-        message: `Failed to send OTP. ${errorMessage || "Please try again later."}`,
-        code: "EMAIL_DELIVERY_FAILED",
+      return res.status(200).json({
+        success: true,
+        message: `OTP logged to server console due to free-tier email limitations. Please check your Render logs.`,
+        devFallback: true,
       });
     }
 
