@@ -2,6 +2,7 @@ const Admin = require('../models/adminModel');
 const Customer = require('../models/customerModel');
 const Doctor = require('../models/doctorModel');
 const Order = require('../models/orderModel');
+const Pharmacist = require('../models/Pharmacist');
 const Otp = require('../models/otpModel');
 const { sendOtpEmail } = require('../utils/emailService');
 const crypto = require('crypto');
@@ -40,13 +41,61 @@ const getDashboardStats = async (req, res) => {
         const userCount = await Customer.countDocuments({});
         const doctorCount = await Doctor.countDocuments({});
         const orderCount = await Order.countDocuments({});
-        const pendingDoctors = await Doctor.countDocuments({ isApproved: false });
+        const activePartnersCount = await Pharmacist.countDocuments({ verificationStatus: 'Approved' });
+        
+        const now = new Date();
+        const startOfToday = new Date(new Date(now).setHours(0, 0, 0, 0));
+        const startOfThisWeek = new Date(new Date(startOfToday).getTime() - 7 * 24 * 60 * 60 * 1000);
+        const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+
+        const getRevenue = async (start) => {
+            const result = await Order.aggregate([
+                { $match: { isPaid: true, createdAt: { $gte: start } } },
+                { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+            ]);
+            return result[0]?.total || 0;
+        };
+
+        const [dailyRev, weeklyRev, monthlyRev, yearlyRev, totalRev] = await Promise.all([
+            getRevenue(startOfToday), getRevenue(startOfThisWeek),
+            getRevenue(startOfThisMonth), getRevenue(startOfThisYear),
+            getRevenue(new Date(0))
+        ]);
+
+        // category distribution (dummy if no category exists, else use source)
+        const categories = await Order.aggregate([
+            { $unwind: "$orderItems" },
+            { $group: { _id: "$orderItems.source", count: { $sum: 1 } } }
+        ]);
+
+        // Daily orders chart data (last 7 days)
+        const dailyTrends = await Order.aggregate([
+            { $match: { createdAt: { $gte: startOfThisWeek } } },
+            { $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                orders: { $sum: 1 },
+                revenue: { $sum: "$totalPrice" }
+            } },
+            { $sort: { "_id": 1 } }
+        ]);
 
         res.json({
             users: userCount,
             doctors: doctorCount,
             orders: orderCount,
-            pendingDoctors
+            activePartners: activePartnersCount,
+            revenue: {
+                daily: dailyRev,
+                weekly: weeklyRev,
+                monthly: monthlyRev,
+                yearly: yearlyRev,
+                total: totalRev
+            },
+            charts: {
+                paymentDistribution: categories,
+                dailyTrends
+            }
         });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -186,6 +235,94 @@ const registerAdmin = async (req, res) => {
 };
 
 
+// ---- NEW SAAS SYSTEM ENDPOINTS ---- //
+
+// @desc    Update user status (block/unblock)
+// @route   PUT /api/admin/users/:id/status
+const updateUserStatus = async (req, res) => {
+    try {
+        const user = await Customer.findById(req.params.id);
+        if (user) {
+            user.status = req.body.status; // 'active' or 'blocked'
+            await user.save();
+            res.json({ success: true, message: `User status updated to ${user.status}` });
+        } else {
+            res.status(404).json({ success: false, message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Get all pharmacists (Partners)
+// @route   GET /api/admin/pharmacists
+const getAllPharmacists = async (req, res) => {
+    try {
+        const pharmacists = await Pharmacist.find({}).sort({ createdAt: -1 });
+        res.json(pharmacists);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Update pharmacist approval status
+// @route   PUT /api/admin/pharmacists/:id/status
+const updatePharmacistStatus = async (req, res) => {
+    try {
+        const pharmacist = await Pharmacist.findById(req.params.id);
+        if (pharmacist) {
+            pharmacist.verificationStatus = req.body.status; // 'Pending', 'Approved', 'Rejected'
+            await pharmacist.save();
+            res.json({ success: true, message: `Pharmacist status updated to ${req.body.status}` });
+        } else {
+            res.status(404).json({ success: false, message: 'Pharmacist not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Get all orders
+// @route   GET /api/admin/orders
+const getAllOrders = async (req, res) => {
+    try {
+        const orders = await Order.find({})
+            .populate('user', 'name email')
+            .populate('pharmacist', 'pharmacyName name')
+            .sort({ createdAt: -1 });
+        res.json(orders);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Create doctor manually
+// @route   POST /api/admin/doctors
+const createDoctor = async (req, res) => {
+    try {
+        const { name, email, password, specialty, experience, location } = req.body;
+        const doctorExists = await Doctor.findOne({ email });
+        
+        if (doctorExists) {
+            return res.status(400).json({ success: false, message: 'Doctor already exists' });
+        }
+
+        const doctor = await Doctor.create({
+            name,
+            email,
+            password,
+            specialty,
+            experience,
+            location,
+            isApproved: true // Admin created doctors are auto-approved
+        });
+
+        res.status(201).json({ success: true, message: 'Doctor created successfully', data: doctor });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     authAdmin,
     getDashboardStats,
@@ -194,5 +331,10 @@ module.exports = {
     approveDoctor,
     registerAdmin,
     sendAdminOtp,
-    verifyAdminOtp
+    verifyAdminOtp,
+    updateUserStatus,
+    getAllPharmacists,
+    updatePharmacistStatus,
+    getAllOrders,
+    createDoctor
 };

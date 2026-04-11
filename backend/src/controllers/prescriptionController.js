@@ -208,7 +208,7 @@ exports.analyzePrescription = async (req, res) => {
         code: 'OCR_FAILED',
         message: 'Unable to read prescription clearly. Please upload a clearer image or enter medicines manually.',
         requiresManualInput: true,
-        debugHint: error.message, // Visible in response for debugging
+        debugHint: process.env.NODE_ENV === 'development' ? error.message : undefined, // Visible in response only for debugging
       });
     }
 
@@ -219,7 +219,7 @@ exports.analyzePrescription = async (req, res) => {
         code: 'UNSUPPORTED_FORMAT',
         message: 'Image format not supported. Please use JPG, PNG, or WebP.',
         requiresManualInput: true,
-        debugHint: error.message,
+        debugHint: process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
 

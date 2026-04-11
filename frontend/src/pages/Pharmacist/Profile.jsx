@@ -11,7 +11,9 @@ import {
     FiCamera,
     FiLock,
     FiShield,
-    FiExternalLink
+    FiExternalLink,
+    FiSettings,
+    FiArrowRight
 } from 'react-icons/fi';
 import PharmacistSidebar from '../../components/Pharmacist/PharmacistSidebar';
 import { useAuth } from '../../context/AuthContext';
@@ -86,7 +88,7 @@ export default function PharmacistProfile() {
                             <div className="relative z-10">
                                 <div className="relative inline-block mt-4">
                                     <img 
-                                        src={`https://ui-avatars.com/api/?name=${user?.name || 'Pharmacist'}&background=6366f1&color=fff&bold=true&size=512`} 
+                                        src={`https://ui-avatars.com/api/?name=${pharmacist?.name || 'Pharmacist'}&background=6366f1&color=fff&bold=true&size=512`} 
                                         alt="Profile Large" 
                                         className="w-40 h-40 rounded-[2.5rem] shadow-2xl border-4 border-white mb-6 group-hover:scale-105 transition-transform duration-500"
                                     />
@@ -94,8 +96,8 @@ export default function PharmacistProfile() {
                                         <FiCamera size={18} />
                                     </button>
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">{user?.name}</h3>
-                                <p className="text-indigo-600 font-black text-xs uppercase tracking-widest mt-2">{user?.pharmacyName}</p>
+                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">{pharmacist?.name}</h3>
+                                <p className="text-indigo-600 font-black text-xs uppercase tracking-widest mt-2">{pharmacist?.pharmacyName}</p>
                                 
                                 <div className="mt-10 flex flex-col items-center gap-4 py-6 border-t border-slate-50">
                                     <div className="flex items-center gap-3 text-slate-500 font-medium text-sm">
@@ -119,7 +121,7 @@ export default function PharmacistProfile() {
                             <div className="space-y-6 relative z-10">
                                 <div>
                                     <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">License No.</p>
-                                    <p className="text-xl font-black tracking-tight text-amber-50 group-hover:text-amber-400 transition-colors uppercase">{user?.licenseNumber}</p>
+                                    <p className="text-xl font-black tracking-tight text-amber-50 group-hover:text-amber-400 transition-colors uppercase">{pharmacist?.licenseNumber}</p>
                                 </div>
                                 <div className="p-5 bg-white/5 rounded-2xl border border-white/10 group-hover:bg-white/10 transition-colors">
                                     <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-2">Verification Status</p>

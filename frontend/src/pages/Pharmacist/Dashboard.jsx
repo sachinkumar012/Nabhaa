@@ -11,6 +11,9 @@ import {
     FiArrowRight
 } from 'react-icons/fi';
 import PharmacistSidebar from '../../components/Pharmacist/PharmacistSidebar';
+import { io } from 'socket.io-client';
+import { toast } from 'react-toastify';
+import { FiCheckSquare } from 'react-icons/fi';
 
 const StatusCard = ({ title, value, icon: Icon, color, trend }) => (
     <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
@@ -43,32 +46,55 @@ export default function PharmacistDashboard() {
     });
     const [recentOrders, setRecentOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [socket, setSocket] = useState(null);
+
+    const fetchData = async () => {
+        if (!pharmacistToken) return;
+        try {
+            const config = {
+                headers: { Authorization: `Bearer ${pharmacistToken}` }
+            };
+            
+            const response = await api.get('/pharmacist/analytics', config);
+            if (response.data.success) {
+                setStats(response.data.analytics);
+            }
+            
+            const ordersRes = await api.get('/orders/pharmacist', config);
+            if (ordersRes.data) {
+                setRecentOrders(ordersRes.data.slice(0, 5));
+            }
+        } catch (err) {
+            console.error("Failed to fetch dashboard data", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            if (!pharmacistToken) return;
-            try {
-                const config = {
-                    headers: { Authorization: `Bearer ${pharmacistToken}` }
-                };
-                
-                const response = await api.get('/pharmacist/analytics', config);
-                if (response.data.success) {
-                    setStats(response.data.analytics);
-                }
-                
-                const ordersRes = await api.get('/orders/pharmacist', config);
-                if (ordersRes.data) {
-                    setRecentOrders(ordersRes.data.slice(0, 5));
-                }
-            } catch (err) {
-                console.error("Failed to fetch dashboard data", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchData();
+
+        // Socket setup
+        const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+        setSocket(newSocket);
+
+        newSocket.on('connect', () => {
+            console.log('Connected to socket server');
+            // Assuming useAuth provides something like pharmacist._id
+            // If not, we'll need to decode the pharmacistToken
+        });
+
+        newSocket.on('new_order', (data) => {
+            toast.info(data.message || 'New order received!', {
+                position: "top-right",
+                onClick: () => window.location.href = '/pharmacist/orders'
+            });
+            fetchData(); // Refresh stats and recent orders
+            const audio = new Audio('/notification.mp3');
+            audio.play().catch(e => console.log("Audio play failed", e));
+        });
+
+        return () => newSocket.close();
     }, [pharmacistToken]);
 
     return (

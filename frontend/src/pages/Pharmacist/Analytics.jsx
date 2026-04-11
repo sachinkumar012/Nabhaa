@@ -194,56 +194,49 @@ export default function PharmacistAnalytics() {
 
                 {/* 2. Main Revenue Trend Chart */}
                 <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm mb-10 overflow-hidden relative">
-                    <div className="flex justify-between items-center mb-10">
+                    <div className="flex justify-between items-center mb-6 relative">
+                        <div className="absolute w-full text-center pointer-events-none mt-2">
+                            <span className="text-[#7B2CBF] font-medium text-[15px] tracking-wide">Scale: 1 Unit = 10 Students (₹100)</span>
+                        </div>
                         <div>
                             <h3 className="text-xl font-bold text-slate-800 capitalize tracking-tight">Revenue Trend</h3>
-                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Earnings vs Orders over time</p>
-                        </div>
-                        <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 bg-indigo-600 rounded-full"></span>
-                                <span className="text-xs font-bold text-slate-500">Revenue</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 bg-emerald-400 rounded-full"></span>
-                                <span className="text-xs font-bold text-slate-500">Orders</span>
-                            </div>
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Earnings over time</p>
                         </div>
                     </div>
                     
-                    <div className="h-[350px] w-full mt-4">
+                    <div className="h-[350px] w-full mt-10">
                         <ResponsiveContainer width="100%" height="100%" debounce={100}>
-                            <AreaChart data={chartData}>
+                            <BarChart data={chartData} margin={{ top: 30, right: 30, left: 10, bottom: 10 }}>
                                 <defs>
-                                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1}/>
-                                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
-                                    </linearGradient>
+                                    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#7B2CBF" />
+                                    </marker>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                                 <XAxis 
                                     dataKey="name" 
-                                    axisLine={false} 
+                                    axisLine={{ stroke: '#7B2CBF', strokeWidth: 3, markerEnd: 'url(#arrow)' }} 
                                     tickLine={false} 
-                                    tick={{fill: '#94A3B8', fontSize: 10, fontWeight: 700}}
-                                    dy={10}
+                                    tick={{fill: '#7B2CBF', fontSize: 13, fontWeight: 500}}
+                                    dy={15}
                                 />
                                 <YAxis 
-                                    axisLine={false} 
+                                    axisLine={{ stroke: '#7B2CBF', strokeWidth: 3, markerEnd: 'url(#arrow)' }} 
                                     tickLine={false} 
-                                    tick={{fill: '#94A3B8', fontSize: 10, fontWeight: 700}}
+                                    tick={{fill: '#7B2CBF', fontSize: 13, fontWeight: 500}}
+                                    dx={-10}
                                 />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Area 
-                                    type="monotone" 
+                                <Tooltip content={<CustomTooltip />} cursor={{fill: '#F1F5F9', opacity: 0.4}} />
+                                <Bar 
                                     dataKey="revenue" 
-                                    stroke="#4F46E5" 
-                                    strokeWidth={6} 
-                                    fillOpacity={1} 
-                                    fill="url(#colorRev)" 
+                                    barSize={55}
                                     animationDuration={1500}
-                                />
-                            </AreaChart>
+                                >
+                                    {chartData.map((entry, index) => {
+                                        const colors = ['#FF0000', '#00B050', '#00B0F0', '#FFC000', '#ED7D31'];
+                                        return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                                    })}
+                                </Bar>
+                            </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>

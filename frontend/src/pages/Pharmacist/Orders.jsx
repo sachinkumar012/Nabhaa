@@ -53,11 +53,24 @@ export default function PharmacistOrders() {
             }
         });
 
-        newSocket.on('new_order', (order) => {
-            setOrders(prev => [order, ...prev]);
+        newSocket.on('new_order', (data) => {
+            const newOrder = data.order || data;
+            setOrders(prev => [newOrder, ...prev]);
+            toast.info(data.message || 'New order received!', {
+                position: "top-right",
+                autoClose: 5000,
+                icon: <FiShoppingBag className="text-indigo-600" />
+            });
             // Play notification sound
             const audio = new Audio('/notification.mp3');
             audio.play().catch(e => console.log("Audio play failed", e));
+        });
+
+        newSocket.on('order_status_updated', (data) => {
+            setOrders(prev => prev.map(o => o._id === data.orderId ? { ...o, status: data.status } : o));
+            if (data.message) {
+                toast.success(data.message);
+            }
         });
 
         return () => newSocket.close();

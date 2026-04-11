@@ -17,9 +17,9 @@ const ConfidenceBadge = ({ score, matchType }) => {
   const color = pct >= 85 ? 'badge-confidence-high' : pct >= 65 ? 'badge-confidence-mid' : 'badge-confidence-low';
   const label = matchType === 'exact' ? 'Exact Match'
     : matchType === 'prefix' ? 'Prefix Match'
-    : matchType === 'fuzzy' ? '~AI Matched'
-    : matchType === 'rxnorm' ? 'RxNorm'
-    : 'Unverified';
+      : matchType === 'fuzzy' ? '~AI Matched'
+        : matchType === 'rxnorm' ? 'RxNorm'
+          : 'Unverified';
   return <span className={`rx-confidence-badge ${color}`}>{label} · {pct}%</span>;
 };
 
@@ -440,7 +440,7 @@ const PrescriptionAnalysis = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#E2f8f7] via-[#ebfcfb] to-[#d4f0f0] relative overflow-x-hidden flex flex-col items-center pt-24 pb-20 px-4 font-sans">
-      
+
       {/* Background Decorative Blurs */}
       <div className="absolute top-[-5%] left-[5%] w-[50%] h-[50%] bg-[#ffffff]/60 blur-[100px] rounded-full pointer-events-none z-0" />
       <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-[#AEE2DD]/40 blur-[120px] rounded-full pointer-events-none z-0" />
@@ -458,8 +458,8 @@ const PrescriptionAnalysis = () => {
       )}
 
       {/* Hero Section */}
-      <div className="w-full bg-gradient-to-br from-[#075985] to-[#1e3a8a] text-white py-16 px-4 absolute top-0 left-0 right-0 z-10 block">
-        <div className="max-w-6xl mx-auto text-center mt-16">
+      <div className="w-full bg-gradient-to-br from-[#075985] to-[#1e3a8a] text-white py-16 px-4 z-10 relative">
+        <div className="max-w-6xl mx-auto text-center mt-12">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium mb-6">
             <Bot size={16} />
             AI Prescriptions
@@ -482,8 +482,8 @@ const PrescriptionAnalysis = () => {
         </div>
       </div>
 
-      {/* Trust Stats mt-72 to clear the absolute hero height */}
-      <div className="max-w-6xl w-full mx-auto px-4 mt-72 mb-10 z-20 relative">
+      {/* Trust Stats */}
+      <div className="max-w-6xl w-full mx-auto px-4 -mt-8 mb-10 z-20 relative">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
             { icon: <Bot size={22} />, value: '99.9%', label: 'AI Accuracy' },
@@ -505,40 +505,40 @@ const PrescriptionAnalysis = () => {
       {/* Upload Zone matching screenshot */}
       <div className="relative z-10 w-full max-w-[850px] bg-white/40 backdrop-blur-xl rounded-[2.5rem] p-5 shadow-[0_30px_60px_-15px_rgba(45,153,143,0.15)] border border-white/60 mb-10">
         <div
-            className={`relative border-[2px] border-dashed rounded-[2rem] text-center transition-all cursor-pointer overflow-hidden group 
+          className={`relative border-[2px] border-dashed rounded-[2rem] text-center transition-all cursor-pointer overflow-hidden group 
               ${isDragging ? 'border-[#42B0A6] bg-white/80 p-10 md:p-14' : 'border-[#9FD4CD] bg-white/40 hover:bg-white/60 p-10 md:p-14'}
               ${previewUrl ? 'border-solid border-[#42B0A6]/30 p-8 bg-white/30' : ''}
             `}
-            onClick={() => !previewUrl && fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
+          onClick={() => !previewUrl && fileInputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
         >
           <input ref={fileInputRef} id="prescriptionUpload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-          
+
           {previewUrl ? (
-             <div className="flex flex-col items-center">
-                 <img src={previewUrl} alt="Preview" className="w-full max-w-sm rounded-[1.5rem] shadow-[0_8px_20px_rgba(0,0,0,0.1)] mb-6 object-contain max-h-[300px] border-[4px] border-white" />
-                 <div className="flex items-center justify-center gap-4 bg-white/80 py-3 px-6 rounded-full shadow-sm">
-                    <span className="flex items-center gap-2 text-[#207068] font-bold"><CheckCircle2 size={18}/> Ready for analysis</span>
-                    <div className="w-px h-5 bg-teal-200"></div>
-                    <button className="flex items-center gap-1.5 text-[#E51C23] hover:text-[#b3141a] font-bold transition-colors" onClick={e => { e.stopPropagation(); handleReset();}}>
-                       <X size={16} strokeWidth={3}/> Change Image
-                    </button>
-                 </div>
-             </div>
+            <div className="flex flex-col items-center">
+              <img src={previewUrl} alt="Preview" className="w-full max-w-sm rounded-[1.5rem] shadow-[0_8px_20px_rgba(0,0,0,0.1)] mb-6 object-contain max-h-[300px] border-[4px] border-white" />
+              <div className="flex items-center justify-center gap-4 bg-white/80 py-3 px-6 rounded-full shadow-sm">
+                <span className="flex items-center gap-2 text-[#207068] font-bold"><CheckCircle2 size={18} /> Ready for analysis</span>
+                <div className="w-px h-5 bg-teal-200"></div>
+                <button className="flex items-center gap-1.5 text-[#E51C23] hover:text-[#b3141a] font-bold transition-colors" onClick={e => { e.stopPropagation(); handleReset(); }}>
+                  <X size={16} strokeWidth={3} /> Change Image
+                </button>
+              </div>
+            </div>
           ) : (
             <>
               <div className="w-16 h-16 bg-[#AEE2DD] rounded-[1.15rem] flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:bg-[#9DE0DA] transition-transform duration-300 shadow-sm relative z-10">
-                  <UploadCloud size={30} className="text-[#207068]" strokeWidth={2.5} />
+                <UploadCloud size={30} className="text-[#207068]" strokeWidth={2.5} />
               </div>
               <h3 className="text-[1.4rem] font-bold text-[#194D48] mb-2.5 relative z-10">Drop prescription here or click to upload</h3>
               <p className="text-[#5b918b] text-[14px] mb-8 font-medium relative z-10">JPG, PNG, WebP up to 10MB · Handwritten prescriptions supported</p>
-              
+
               <div className="inline-flex flex-wrap items-center justify-center gap-4 md:gap-7 bg-white/80 backdrop-blur-md px-6 md:px-8 py-3.5 rounded-[2rem] text-[#3A948C] text-sm font-semibold border border-[#e0f4f2] shadow-sm relative z-20">
-                  <span className="flex items-center gap-2 text-[#466661]"><FileImage size={17} className="text-[#51B3A8]" /> Clear photos work best</span>
-                  <span className="flex items-center gap-2 text-[#466661]"><Pill size={17} className="text-[#51B3A8]" /> Detects Tab, Cap, Syp, Inj</span>
-                  <span className="flex items-center gap-2 text-[#466661]"><Sparkles size={17} className="text-[#51B3A8]" /> AI corrects OCR</span>
+                <span className="flex items-center gap-2 text-[#466661]"><FileImage size={17} className="text-[#51B3A8]" /> Clear photos work best</span>
+                <span className="flex items-center gap-2 text-[#466661]"><Pill size={17} className="text-[#51B3A8]" /> Detects Tab, Cap, Syp, Inj</span>
+                <span className="flex items-center gap-2 text-[#466661]"><Sparkles size={17} className="text-[#51B3A8]" /> AI corrects OCR</span>
               </div>
             </>
           )}
@@ -546,30 +546,30 @@ const PrescriptionAnalysis = () => {
 
         {/* Floating Action Buttons */}
         {file && !isAnalyzing && !results && (
-            <div className="flex justify-center mt-6 relative z-10 pb-2">
-              <button id="btnRunAnalysis" className="flex items-center gap-2 bg-[#42B0A6] hover:bg-[#32968D] text-white px-10 py-3.5 rounded-full font-bold text-[16px] tracking-wide shadow-[0_8px_20px_rgba(66,176,166,0.3)] hover:shadow-[0_12px_24px_rgba(66,176,166,0.4)] transition-all hover:-translate-y-1 group" onClick={handleAnalyze}>
-                <Bot size={22} className="group-hover:animate-bounce" /> Run AI Analysis
-              </button>
-            </div>
+          <div className="flex justify-center mt-6 relative z-10 pb-2">
+            <button id="btnRunAnalysis" className="flex items-center gap-2 bg-[#42B0A6] hover:bg-[#32968D] text-white px-10 py-3.5 rounded-full font-bold text-[16px] tracking-wide shadow-[0_8px_20px_rgba(66,176,166,0.3)] hover:shadow-[0_12px_24px_rgba(66,176,166,0.4)] transition-all hover:-translate-y-1 group" onClick={handleAnalyze}>
+              <Bot size={22} className="group-hover:animate-bounce" /> Run AI Analysis
+            </button>
+          </div>
         )}
         {error && (
-            <div className="mt-8 flex flex-col items-center relative z-10 pb-2">
-              <div className="flex flex-col items-center gap-3 bg-red-50/90 backdrop-blur text-red-700 border border-red-200 p-6 rounded-[1.5rem] w-full max-w-lg mb-4 shadow-sm text-center">
-                 <AlertCircle size={32} className="mb-2" />
-                 <h4 className="font-bold text-lg">Analysis Failed</h4>
-                 <p className="text-[14px] font-medium opacity-90">{error}</p>
-                 <button className="mt-4 flex items-center gap-2 bg-white text-red-600 hover:bg-red-50 px-6 py-2.5 rounded-full text-sm font-bold border border-red-200 shadow-sm transition-colors cursor-pointer" onClick={handleReset}>
-                   <RefreshCw size={16} strokeWidth={2.5}/> Try Another Image
-                 </button>
-              </div>
-            </div>
-        )}
-        {results && !isAnalyzing && (
-            <div className="flex justify-center mt-6 relative z-10 pb-2">
-              <button className="flex items-center gap-2 bg-white/90 backdrop-blur border-2 border-[#42B0A6]/30 text-[#42B0A6] hover:bg-[#eaf8f6] px-8 py-3 rounded-full font-bold shadow-sm transition-all text-sm uppercase tracking-wide" onClick={handleReset}>
-                <RefreshCw size={18} /> Analyze New Prescription
+          <div className="mt-8 flex flex-col items-center relative z-10 pb-2">
+            <div className="flex flex-col items-center gap-3 bg-red-50/90 backdrop-blur text-red-700 border border-red-200 p-6 rounded-[1.5rem] w-full max-w-lg mb-4 shadow-sm text-center">
+              <AlertCircle size={32} className="mb-2" />
+              <h4 className="font-bold text-lg">Analysis Failed</h4>
+              <p className="text-[14px] font-medium opacity-90">{error}</p>
+              <button className="mt-4 flex items-center gap-2 bg-white text-red-600 hover:bg-red-50 px-6 py-2.5 rounded-full text-sm font-bold border border-red-200 shadow-sm transition-colors cursor-pointer" onClick={handleReset}>
+                <RefreshCw size={16} strokeWidth={2.5} /> Try Another Image
               </button>
             </div>
+          </div>
+        )}
+        {results && !isAnalyzing && (
+          <div className="flex justify-center mt-6 relative z-10 pb-2">
+            <button className="flex items-center gap-2 bg-white/90 backdrop-blur border-2 border-[#42B0A6]/30 text-[#42B0A6] hover:bg-[#eaf8f6] px-8 py-3 rounded-full font-bold shadow-sm transition-all text-sm uppercase tracking-wide" onClick={handleReset}>
+              <RefreshCw size={18} /> Analyze New Prescription
+            </button>
+          </div>
         )}
       </div>
 
@@ -637,8 +637,8 @@ const PrescriptionAnalysis = () => {
                         {results.reason === 'low_confidence'
                           ? `OCR confidence is ${overallPct}% — too low to verify. `
                           : results.reason === 'no_detection'
-                          ? 'No medicine lines were detected in the prescription. '
-                          : 'Medicine could not be found in our database. '}
+                            ? 'No medicine lines were detected in the prescription. '
+                            : 'Medicine could not be found in our database. '}
                         Showing alternatives based on same composition.
                       </p>
                     </div>
@@ -719,3 +719,4 @@ const PrescriptionAnalysis = () => {
 };
 
 export default PrescriptionAnalysis;
+

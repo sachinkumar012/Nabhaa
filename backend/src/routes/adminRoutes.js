@@ -8,9 +8,14 @@ const {
     approveDoctor,
     registerAdmin,
     sendAdminOtp,
-    verifyAdminOtp
+    verifyAdminOtp,
+    updateUserStatus,
+    getAllPharmacists,
+    updatePharmacistStatus,
+    getAllOrders,
+    createDoctor
 } = require('../controllers/adminController');
-// const { protect, admin } = require('../middleware/authMiddleware'); // Temporarily removing
+const { protect, admin } = require('../middleware/authMiddleware');
 
 console.log('Admin Routes Loaded');
 
@@ -20,11 +25,23 @@ router.post('/login', authAdmin);
 router.post('/send-otp', sendAdminOtp);
 router.post('/verify-otp', verifyAdminOtp);
 router.post('/register', registerAdmin);
-// router.get('/dashboard', protect, admin, getDashboardStats);
-// For now, let's keep it simple without middleware to test fast, or I need to create the middleware
-router.get('/dashboard', getDashboardStats);
-router.get('/users', getAllUsers);
-router.get('/doctors', getAllDoctors);
-router.put('/doctors/:id/approve', approveDoctor);
+// Dashboard & Metrics
+router.get('/dashboard', protect, admin, getDashboardStats);
+
+// Users Management
+router.get('/users', protect, admin, getAllUsers);
+router.put('/users/:id/status', protect, admin, updateUserStatus);
+
+// Pharmacists (Partners) Management
+router.get('/pharmacists', protect, admin, getAllPharmacists);
+router.put('/pharmacists/:id/status', protect, admin, updatePharmacistStatus);
+
+// Orders Monitoring
+router.get('/orders', protect, admin, getAllOrders);
+
+// Doctors Control
+router.get('/doctors', protect, admin, getAllDoctors);
+router.post('/doctors', protect, admin, createDoctor);
+router.put('/doctors/:id/approve', protect, admin, approveDoctor);
 
 module.exports = router;

@@ -13,7 +13,6 @@ export const AuthProvider = ({ children }) => {
     });
     const [token, setToken] = useState(() => localStorage.getItem('token') || null);
 
-    // ── Pharmacist Auth (Added) ───────────────────────────────────────────
     const [pharmacist, setPharmacist] = useState(() => {
         try {
             const stored = localStorage.getItem('nabha_pharmacist');
@@ -21,6 +20,15 @@ export const AuthProvider = ({ children }) => {
         } catch { return null; }
     });
     const [pharmacistToken, setPharmacistToken] = useState(() => localStorage.getItem('nabha_pharmacist_token') || null);
+
+    // ── Admin Auth (Added) ───────────────────────────────────────────────
+    const [admin, setAdmin] = useState(() => {
+        try {
+            const stored = localStorage.getItem('nabha_admin');
+            return stored ? JSON.parse(stored) : null;
+        } catch { return null; }
+    });
+    const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken') || null);
 
     const [isAuthModalOpen, setAuthModalOpen] = useState(false);
 
@@ -63,10 +71,25 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('nabha_pharmacist_token');
     };
 
+    const loginAdmin = (data, jwt) => {
+        setAdmin(data);
+        setAdminToken(jwt);
+        localStorage.setItem('nabha_admin', JSON.stringify(data));
+        localStorage.setItem('adminToken', jwt);
+    };
+
+    const logoutAdmin = () => {
+        setAdmin(null);
+        setAdminToken(null);
+        localStorage.removeItem('nabha_admin');
+        localStorage.removeItem('adminToken');
+    };
+
     return (
         <AuthContext.Provider value={{ 
             user, token, login, logout, 
             pharmacist, pharmacistToken, loginPharmacist, logoutPharmacist,
+            admin, adminToken, loginAdmin, logoutAdmin,
             isAuthModalOpen, setAuthModalOpen 
         }}>
             {children}

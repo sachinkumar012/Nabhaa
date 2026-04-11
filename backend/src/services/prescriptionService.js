@@ -69,10 +69,18 @@ class PrescriptionService {
     // Try Gemini Vision first — always send as image/jpeg since controller normalized it
     const effectiveMime = 'image/jpeg';
     const geminiResult = await PrescriptionService._ocrWithGemini(processedBuffer, effectiveMime);
-    if (geminiResult && geminiResult.text && geminiResult.text.trim().length > 20) {
-      console.log('[OCR] Gemini Vision succeeded');
-      return { text: geminiResult.text, engine: 'gemini', confidence: geminiResult.confidence };
+    
+    if (geminiResult && geminiResult.structuredData?.medicines?.length > 0) {
+      console.log('[OCR] Gemini Vision succeeded —',
+        geminiResult.structuredData.medicines.length, 'medicines found');
+      return {
+        text: geminiResult.text,
+        engine: 'gemini',
+        confidence: geminiResult.confidence,
+        structuredData: geminiResult.structuredData,
+      };
     }
+    console.log('[OCR] Gemini returned no medicines — falling back to Tesseract');
 
     // Fallback to Tesseract LSTM
     console.log('[OCR] Falling back to Tesseract LSTM...');
@@ -80,61 +88,162 @@ class PrescriptionService {
     return { text: tesseractResult, engine: 'tesseract', confidence: 0.7 };
   }
 
-  /** Gemini Vision OCR with prescription-specific prompt */
+  /** Gemini Vision Structured Extraction — best for handwriting */
   static async _ocrWithGemini(buffer, mimeType) {
     try {
       const genAI = getGeminiClient();
       if (!genAI) throw new Error('Gemini key not configured');
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      // ── Model Selection (auto-fallback chain) ─────────────────────────────
+      const MODELS = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-1.5-pro',
+        'gemini-pro-vision',
+      ];
 
-      const imagePart = {
-        inlineData: {
-          data: buffer.toString('base64'),
-          mimeType: mimeType || 'image/jpeg',
-        },
-      };
+      let result = null;
+      let lastError = null;
 
-      const prompt = `You are a medical prescription OCR specialist working for a pharmacy system.
-Your job is to extract ALL text from this prescription image EXACTLY as written.
+      for (const modelName of MODELS) {
+        try {
+          console.log(`[Gemini] Trying model: ${modelName}`);
+          const model = genAI.getGenerativeModel({ model: modelName });
 
-IMPORTANT: This prescription may be in ANY of these formats:
+          const imagePart = {
+            inlineData: {
+              data: buffer.toString('base64'),
+              mimeType: mimeType || 'image/jpeg',
+            },
+          };
 
-FORMAT A — Handwritten style (most common):
-  Tab Amoxicillin 500mg BD x 5 days
-  Syp Calpol 250mg TDS
+          const prompt = `You are a medical prescription OCR specialist. Extract ALL medicines from this prescription image and return ONLY a valid JSON object.
 
-FORMAT B — Structured form style (label: value pairs):
-  Medication: Atorvastatin
-  Dosage Form (Tablet/Capsule/Liquid): Tablet
-  Strength: 40 mg
-  Quantity: 30 Tablets
-  Route of Administration: Oral
-  Frequency: Once daily
-  Duration of Therapy: 30 days
-
-FORMAT C — Table format:
-  | Medicine     | Dose  | Frequency |
-  | Paracetamol  | 500mg | TDS       |
+PRESCRIPTION TYPES YOU WILL SEE:
+- Handwritten English prescriptions (most common)
+- Printed clinic/hospital prescriptions
+- Mixed Telugu/Hindi + English prescriptions
+- Scanned or photographed paper prescriptions
 
 EXTRACTION RULES:
-- Return ALL text verbatim, preserving line breaks
-- DO NOT summarize, interpret, or skip any field
-- Keep ALL label:value pairs intact (e.g., "Medication: Atorvastatin" must appear exactly)
-- Keep ALL dosage info (mg, ml, mcg, g)
-- Keep ALL frequency info (OD, BD, TDS, Once daily, Twice daily)
-- Keep ALL duration info (x 5 days, 30 days, Duration: 30 days)
+1. Read EVERY line carefully, even if handwriting is unclear or tilted.
+2. Look for these medicine indicators: Tab / Cap / Syp / Inj / Oint / Drops / mg / ml / mcg / BD / TDS / OD / QD / HS / SOS / AC / PC / PRN
+3. ALWAYS include a medicine even if partially legible — set highConfidence: false. Never skip a line.
+4. Spell-correct obvious OCR errors:
+   - "Dlo" → "Dolo", "Metformin" not "Metfornin", "Amlodipine" not "Amlodipin"
+   - "BID" = BD, "QID" = QDS, "TID" = TDS
+5. Frequency decoding:
+   - OD / QD = once daily
+   - BD / BID = twice daily  
+   - TDS / TID = thrice daily
+   - QDS / QID = four times daily
+   - HS = at bedtime, SOS / PRN = as needed
+   - "1-0-1" = BD (morning + night)
+   - "1-1-1" = TDS
+   - "0-0-1" = once at night
+   - "1-0-0" = once in morning
+6. Form normalization: always use one of — Tablet, Capsule, Syrup, Injection, Ointment, Gel, Drops, Inhaler, Patch, Powder
+7. Common Indian brand names to recognize: Dolo, Crocin, Combiflam, Pan, Pantop, Omez, Rantac, Augmentin, Azithral, Calpol, Betaloc, Telma, Amlodipine, Metformin, Glycomet, Ecosprin, Sorbitrate, Diamicron, Losartan, Telmisartan, Atorvastatin, Rosuvastatin, Levothyroxine, Cetrizine, Montair, Allegra, Deriphyllin, Asthalin, Budecort
+8. Extract rawText exactly as you see it on the prescription for that medicine line.
+9. If imageQuality is poor, still attempt extraction — a low-confidence guess is better than nothing.
 
-Return ONLY the raw extracted text. Nothing else.`;
+OUTPUT FORMAT — return ONLY this JSON, no markdown, no explanation, no code fences:
+{
+  "medicines": [
+    {
+      "name": "Betaloc",
+      "dosage": "100mg",
+      "form": "Tablet",
+      "frequency": "BD",
+      "duration": "5 days",
+      "rawText": "Betaloc 100mg - 1 tab BID",
+      "highConfidence": true
+    },
+    {
+      "name": "Dorzolamide",
+      "dosage": "10mg",
+      "form": "Tablet",
+      "frequency": "BD",
+      "duration": null,
+      "rawText": "Dorzolamide 10mg - 1 tab BID",
+      "highConfidence": true
+    }
+  ],
+  "metadata": {
+    "doctorName": "Dr. Steve Johnson",
+    "clinicName": "Medical Centre",
+    "patientName": "John Smith",
+    "date": "09/13",
+    "language": "English",
+    "imageQuality": "good",
+    "totalLinesScanned": 4
+  },
+  "isHandwritten": true,
+  "overallConfidence": 0.92
+}
 
+IMPORTANT: If you see ANY text resembling a medicine name, include it. A wrong guess gets corrected by our database — an empty list cannot be fixed.`;
 
-      const result = await model.generateContent([prompt, imagePart]);
-      const text = result.response.text();
+          result = await model.generateContent([prompt, imagePart]);
+          console.log(`[Gemini] Success with model: ${modelName}`);
+          break; // stop trying models once one works
 
-      // Gemini's structured understanding gives high confidence
-      return { text, confidence: 0.92 };
+        } catch (err) {
+          console.warn(`[Gemini] Model ${modelName} failed:`, err.message);
+          lastError = err;
+          continue; // try next model
+        }
+      }
+
+      if (!result) {
+        throw lastError || new Error('All Gemini models failed');
+      }
+
+      const responseText = result.response.text();
+      console.log('[Gemini] Raw response length:', responseText.length);
+
+      // Write debug log
+      require('fs').appendFileSync('gemini_debug.log',
+        `\n--- ${new Date().toISOString()} ---\n${responseText}\n`
+      );
+
+      // ── Parse JSON (strip markdown fences if Gemini wraps them) ───────────
+      let structuredData = null;
+      try {
+        // Strip ```json ... ``` or ``` ... ``` wrappers
+        const clean = responseText
+          .replace(/```json\s*/gi, '')
+          .replace(/```\s*/g, '')
+          .trim();
+
+        const jsonMatch = clean.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          structuredData = JSON.parse(jsonMatch[0]);
+          console.log(`[Gemini] Parsed ${structuredData.medicines?.length || 0} medicines`);
+        }
+      } catch (e) {
+        console.warn('[Gemini] JSON parse failed:', e.message);
+        require('fs').appendFileSync('gemini_debug.log', `PARSE ERROR: ${e.message}\n`);
+      }
+
+      // ── Validate: must have at least 1 medicine to be considered success ──
+      if (!structuredData || !structuredData.medicines || structuredData.medicines.length === 0) {
+        console.warn('[Gemini] Returned 0 medicines — will fall back to Tesseract');
+        return null;
+      }
+
+      return {
+        text: responseText,
+        structuredData,
+        confidence: structuredData.overallConfidence || 0.9,
+      };
+
     } catch (err) {
-      console.error('[OCR] Gemini Vision error:', err.message);
+      console.error('[Gemini] Fatal error:', err.message);
+      require('fs').appendFileSync('gemini_debug.log',
+        `GEMINI FATAL: ${err.message}\n${err.stack}\n`
+      );
       return null;
     }
   }
@@ -299,6 +408,7 @@ Return ONLY the raw extracted text. Nothing else.`;
               candidateName: candidate,
               matchType: 'rxnorm',
               confidence: 0.65,
+              highConfidence: entity.highConfidence,
               dosage: entity.dosage,
               form: entity.form,
               frequency: entity.frequency,
@@ -317,6 +427,7 @@ Return ONLY the raw extracted text. Nothing else.`;
           candidateName: candidate,
           matchType: 'unmatched',
           confidence: 0.3,
+          highConfidence: entity.highConfidence ?? false,
           dosage: entity.dosage,
           form: entity.form,
           frequency: entity.frequency,
@@ -332,6 +443,7 @@ Return ONLY the raw extracted text. Nothing else.`;
         matchedName: matched.name,
         matchType,
         confidence: computeConfidence(matchType, similarityScore),
+        highConfidence: entity.highConfidence ?? true,
         dosage: entity.dosage,
         form: entity.form || matched.packSize,
         frequency: entity.frequency,
@@ -348,66 +460,81 @@ Return ONLY the raw extracted text. Nothing else.`;
   // ══════════════════════════════════════════════════════════════════════════
   static async analyzePrescription(imageBuffer, mimeType) {
     // Layer 2: OCR
-    const { text: rawText, engine, confidence: ocrConfidence } =
+    const { text: rawText, engine, confidence: ocrConfidence, structuredData } =
       await PrescriptionService.extractTextFromImage(imageBuffer, mimeType);
 
-    console.log(`[Pipeline] OCR engine: ${engine}, raw text length: ${rawText.length}`);
-    console.log('[Pipeline] Raw text preview:', rawText.substring(0, 400));
+    console.log(`[Pipeline] OCR engine: ${engine}, raw text length: ${rawText?.length || 0}`);
+    if (structuredData) {
+      console.log('[Pipeline] Gemini returned structured JSON with', structuredData.medicines?.length, 'medicines');
+    }
 
     // Layer 3: Clean
     const cleanedText = PrescriptionService.cleanOcrText(rawText);
 
-    // ── Layer 3.5: Structured Form Pre-Pass ────────────────────────────────
-    // Detect label:value prescription format BEFORE applying medicine line regex
-    // e.g. "Medication: Atorvastatin\nStrength: 40 mg\nDosage Form: Tablet"
-    // Run on RAW text (before noise removal which may strip labels)
+    // ── Layer 3.5: Structured Form Pre-Pass (Legacy Regex-based labels) ───
     const structuredResult = parseStructuredForm(rawText);
 
-    let medicineLines;
-    let isStructuredForm = false;
+    let medicineLines = [];
+    let isStructuredForm = !!structuredData; // Improved detection
 
-    if (structuredResult && structuredResult.medicineLines.length > 0) {
-      // Use the synthesized medicine line from structured detection
+    if (structuredData && structuredData.medicines) {
+      // Use medicine names as lines for UI display
+      medicineLines = structuredData.medicines.map(m => 
+        `${m.form || 'Tab'} ${m.name} ${m.dosage || ''} ${m.frequency || ''}`.trim()
+      );
+    } else if (structuredResult && structuredResult.medicineLines.length > 0) {
       medicineLines = structuredResult.medicineLines;
       isStructuredForm = true;
-      console.log('[Pipeline] Structured form detected. Using synthesized lines:', medicineLines);
     } else {
-      // Layer 4: Normal medicine line detection
       medicineLines = PrescriptionService.detectMedicineLines(cleanedText);
     }
 
     // Layer 5: NLP Entity Extraction
-    const entities = PrescriptionService.parseMedicineEntities(medicineLines);
-
-    // If structured but entities still empty (name was a known drug not in stop words)
-    // directly create an entity from the raw fields
-    if (isStructuredForm && entities.length === 0 && structuredResult.fields.medName) {
-      const { medName, strength, form, frequency, duration } = structuredResult.fields;
-      entities.push({
-        rawLine: `${medName} ${strength || ''}`.trim(),
-        candidateName: medName,
-        dosage: strength || null,
-        form: form || null,
-        frequency: frequency || null,
-        duration: duration || null,
-      });
-      console.log('[Pipeline] Entity injected directly from structured fields:', entities[0]);
+    let entities = [];
+    if (structuredData && structuredData.medicines) {
+      entities = structuredData.medicines.map(m => ({
+        rawLine: `${m.name} ${m.dosage || ''} ${m.frequency || ''}`.trim(),
+        candidateName: m.name,
+        dosage: m.dosage || null,
+        form: m.form || null,
+        frequency: m.frequency || null,
+        duration: m.duration || null,
+        highConfidence: m.highConfidence
+      }));
+    } else {
+      entities = PrescriptionService.parseMedicineEntities(medicineLines);
+      
+      if (structuredResult && entities.length === 0 && structuredResult.fields.medName) {
+        const { medName, strength, form, frequency, duration } = structuredResult.fields;
+        entities.push({
+          rawLine: `${medName} ${strength || ''}`.trim(),
+          candidateName: medName,
+          dosage: strength || null,
+          form: form || null,
+          frequency: frequency || null,
+          duration: duration || null,
+        });
+      }
     }
 
-    // Layer 6: Validate + Match
+    // Layer 6: Validate + Match (Database lookup)
     const matchedMedicines = await PrescriptionService.validateAndMatchMedicines(entities);
 
     // Compute overall confidence
-    // Boost confidence for structured forms since labels are reliable
-    const baseConfidence = matchedMedicines.length > 0
-      ? matchedMedicines.reduce((sum, m) => sum + m.confidence, 0) / matchedMedicines.length
-      : 0;
-    const overallConfidence = isStructuredForm && baseConfidence > 0
-      ? Math.max(baseConfidence, 0.75)   // structured forms are more reliable
-      : baseConfidence;
+    let overallConfidence = 0;
+    if (structuredData) {
+      overallConfidence = structuredData.overallConfidence || 0.9;
+    } else {
+      const baseConfidence = matchedMedicines.length > 0
+        ? matchedMedicines.reduce((sum, m) => sum + m.confidence, 0) / matchedMedicines.length
+        : 0;
+      overallConfidence = isStructuredForm && baseConfidence > 0
+        ? Math.max(baseConfidence, 0.75)
+        : baseConfidence;
+    }
 
     const requiresConfirmation = overallConfidence < 0.70 ||
-      matchedMedicines.some(m => m.matchType === 'unmatched');
+      matchedMedicines.some(m => m.matchType === 'unmatched' || m.highConfidence === false);
 
     return {
       rawText,
@@ -546,17 +673,18 @@ Return ONLY the raw extracted text. Nothing else.`;
    *   - All medicines are 'unmatched' (no DB record)
    */
   static shouldTriggerFallback(pipelineResult) {
-    // Never fallback when structured form parsing found a matched medicine
-    // (Tesseract confidence is low for text-only forms but results are correct)
+    // Never fallback if structured form parsing already found matched medicines
     if (pipelineResult.isStructuredForm && pipelineResult.totalFound > 0) return false;
 
-    if (pipelineResult.overallConfidence < 0.60) return true;
+    // If Gemini found medicines but DB couldn't match them,
+    // show UNVERIFIED cards instead of fallback — user can confirm manually
+    if (pipelineResult.extractedMedicines.length > 0) return false;
+
+    // Trigger fallback only when truly nothing was found
     if (pipelineResult.totalFound === 0) return true;
     if (pipelineResult.extractedMedicines.length === 0) return true;
-    const allUnmatched = pipelineResult.extractedMedicines.every(
-      m => m.matchType === 'unmatched'
-    );
-    if (allUnmatched) return true;
+    if (pipelineResult.overallConfidence < 0.45) return true;
+
     return false;
   }
 

@@ -103,6 +103,7 @@ const ProductDetailPage = () => {
           storage: med.storage || 'Store in a cool, dry place below 25°C',
           pharmacist: med.pharmacist?._id || med.pharmacist,
           returnPolicy: '7 days return',
+          images: med.images || [],
         };
         setMedicine(mapped);
 
@@ -270,28 +271,42 @@ const ProductDetailPage = () => {
             {/* LEFT — Image + Gallery ───────────────────────────────── */}
             <div className="p-6 lg:p-8 flex flex-col gap-4 lg:border-r border-gray-100">
               {/* Main image */}
-              <div className={`bg-gradient-to-br ${style.from} ${style.to} rounded-2xl flex items-center justify-center min-h-[280px] lg:min-h-[340px] relative`}>
-                <div className={`absolute top-3 left-3 ${style.badge} text-white text-xs font-bold px-3 py-1 rounded-full shadow`}>
+              <div className="bg-white rounded-2xl flex items-center justify-center min-h-[280px] lg:min-h-[340px] relative overflow-hidden">
+                <div className={`absolute top-3 left-3 ${style.badge} text-white text-xs font-bold px-3 py-1 rounded-full shadow z-10`}>
                   {medicine.discount}% OFF
                 </div>
-                <div className="w-36 h-36 lg:w-48 lg:h-48 bg-white/70 rounded-2xl flex items-center justify-center text-7xl lg:text-8xl shadow-lg ring-4 ring-white">
-                  {thumbs[activeThumb]}
-                </div>
+                {medicine.images && medicine.images.length > 0 ? (
+                  <div className="w-48 h-48 lg:w-64 lg:h-64 bg-white/90 rounded-2xl flex items-center justify-center shadow-md p-2 relative z-0">
+                    <img 
+                      src={medicine.images[activeThumb] || medicine.images[0]} 
+                      alt={medicine.name} 
+                      className="max-w-full max-h-full object-contain mix-blend-multiply" 
+                    />
+                  </div>
+                ) : (
+                  <div className="w-36 h-36 lg:w-48 lg:h-48 bg-white/70 rounded-2xl flex items-center justify-center text-7xl lg:text-8xl shadow-lg ring-4 ring-white">
+                    {thumbs[activeThumb]}
+                  </div>
+                )}
               </div>
 
               {/* Thumbnail strip */}
               <div className="flex gap-2.5">
-                {thumbs.map((ic, i) => (
+                {(medicine.images && medicine.images.length > 0 ? medicine.images : thumbs).map((item, i) => (
                   <button
                     key={i}
                     onClick={() => setActiveThumb(i)}
-                    className={`w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl transition-all
+                    className={`w-16 h-16 rounded-xl border-2 flex items-center justify-center text-2xl transition-all overflow-hidden bg-white
                       ${activeThumb === i
-                        ? 'border-teal-500 bg-teal-50 shadow-md shadow-teal-100'
+                        ? 'border-teal-500 shadow-md shadow-teal-100'
                         : 'border-gray-200 bg-gray-50 hover:border-teal-300'
                       }`}
                   >
-                    {ic}
+                    {medicine.images && medicine.images.length > 0 ? (
+                      <img src={item} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      item
+                    )}
                   </button>
                 ))}
               </div>

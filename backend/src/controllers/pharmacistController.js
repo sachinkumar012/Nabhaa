@@ -76,6 +76,13 @@ const loginPharmacist = async (req, res) => {
         const pharmacist = await Pharmacist.findOne({ email }).select('+password');
 
         if (pharmacist && (await pharmacist.matchPassword(password))) {
+            if (pharmacist.verificationStatus !== 'Approved') {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: `Account is ${pharmacist.verificationStatus.toLowerCase()}. Please wait for admin approval.` 
+                });
+            }
+
             res.json({
                 success: true,
                 user: {

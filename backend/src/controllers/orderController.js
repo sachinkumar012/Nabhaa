@@ -56,6 +56,20 @@ const addOrderItems = async (req, res) => {
         });
 
         const createdOrder = await order.save();
+
+        // SOCKET.IO REAL-TIME NOTIFICATION
+        const io = req.app.get('io');
+        if (io && pharmacistId) {
+            // Populate user info for the notification
+            const populatedOrder = await Order.findById(createdOrder._id).populate('user', 'name phone');
+            io.to(`pharmacist_${pharmacistId}`).emit('new_order', {
+                order: populatedOrder,
+                message: 'New order received!'
+            });
+            // Also notify admins if needed
+            io.emit('admin_new_order', { order: populatedOrder });
+        }
+
         res.status(201).json(createdOrder);
     } catch (err) {
         console.error('addOrderItems error:', err);
@@ -199,6 +213,22 @@ const updateOrderStatus = async (req, res) => {
         }
 
         const updatedOrder = await order.save();
+
+        // SOCKET.IO REAL-TIME NOTIFICATION
+        const io = req.app.get('io');
+        if (io && order.pharmacist) {
+            io.to(`pharmacist_${order.pharmacist}`).emit('order_status_updated', {
+                orderId: order._id,
+                status: status,
+                message: `Order #${order._id.toString().slice(-6).toUpperCase()} updated to ${status}`
+            });
+            // Notify user too if they have a room
+            io.to(`user_${order.user}`).emit('order_update', {
+                orderId: order._id,
+                status: status
+            });
+        }
+
         res.json(updatedOrder);
     } catch (err) {
         console.error('updateOrderStatus error:', err);

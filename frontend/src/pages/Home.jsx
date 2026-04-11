@@ -120,16 +120,16 @@ export default function Home() {
       id: 0,
       image: doctorKidneyBg,
       content: (
-        <div className="w-full h-full relative" style={{ minHeight: '550px' }}>
+        <div className="w-full h-full relative min-h-[500px] lg:min-h-[550px]">
            {/* Center Badge Focus */}
-           <div className="absolute top-[20%] left-[10%] md:left-[25%] lg:left-[35%] w-64 h-64 md:w-80 md:h-80 bg-[#1D70B8] rounded-full border-[3px] border-white shadow-2xl flex flex-col justify-center items-center text-center p-6 z-20 animate-[pulse_6s_ease-in-out_infinite]">
+           <div className="absolute top-[15%] md:top-[20%] left-1/2 -translate-x-1/2 lg:left-[35%] lg:translate-x-0 w-64 h-64 md:w-80 md:h-80 bg-[#1D70B8] rounded-full border-[3px] border-white shadow-2xl flex flex-col justify-center items-center text-center p-6 z-20 animate-[pulse_6s_ease-in-out_infinite]">
               <div className="border border-white/40 w-full h-full rounded-full flex flex-col justify-center items-center p-4">
                  <h2 className="text-white text-xl md:text-2xl font-medium tracking-wide leading-tight mb-2">LASER SURGERY FOR</h2>
                  <h1 className="text-white text-2xl md:text-4xl font-black tracking-wider leading-tight">KIDNEY STONES</h1>
               </div>
            </div>
 
-           {/* E-Consultation Floating Form */}
+           {/* E-Consultation Floating Form (Desktop) */}
            <div className="hidden lg:block absolute right-[5%] xl:right-[15%] top-1/2 -translate-y-1/2 bg-white rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden w-[380px] z-30">
               <div className="bg-[#E51C23] text-white text-center py-3 font-bold text-[15px] tracking-wide">
                  FREE E-CONSULTATION
@@ -153,8 +153,8 @@ export default function Home() {
       id: 1,
       image: infrastructureBg,
       content: (
-        <div className="w-full h-full relative flex items-center" style={{ minHeight: '550px' }}>
-           <div className="bg-white/95 backdrop-blur-sm px-8 md:px-16 py-8 md:py-12 ml-0 md:ml-12 lg:ml-32 max-w-xl shadow-2xl border-l-8 border-[#1D70B8]">
+        <div className="w-full h-full relative flex items-center min-h-[500px] lg:min-h-[550px]">
+           <div className="bg-white/95 backdrop-blur-sm px-8 md:px-16 py-8 md:py-12 ml-0 lg:ml-32 max-w-xl shadow-2xl border-l-8 border-[#1D70B8]">
              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#0A2540] leading-tight">State-of-the-art</h1>
              <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-[#0A2540] leading-tight mt-2">Infrastructure</h2>
            </div>
@@ -174,7 +174,7 @@ export default function Home() {
     <div className="min-h-screen bg-background text-text font-sans">
       
       {/* Dynamic Hero Slider */}
-      <section className="relative w-full h-[550px] lg:h-[650px] bg-gray-900 overflow-hidden group">
+      <section className="relative w-full h-[500px] lg:h-[650px] bg-gray-900 overflow-hidden group">
          {slides.map((slide, index) => (
            <div 
              key={slide.id}
@@ -202,6 +202,28 @@ export default function Home() {
          >
             <ChevronRight size={32} />
          </button>
+      </section>
+
+      {/* Mobile E-Consultation Form (Visible only on small screens below hero) */}
+      <section className="lg:hidden bg-white py-12 px-4 shadow-inner">
+         <div className="max-w-md mx-auto">
+            <div className="bg-[#E51C23] text-white text-center py-3 rounded-t-lg font-bold text-[15px] tracking-wide">
+               FREE E-CONSULTATION
+            </div>
+            <div className="bg-gray-50 p-6 rounded-b-lg border border-gray-200 shadow-sm">
+               <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); alert("Successfully submitted E-Consultation request!"); }}>
+                  <input type="text" placeholder="Name*" required className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm bg-white" />
+                  <div className="flex gap-4">
+                    <input type="tel" placeholder="Mobile*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm bg-white" />
+                    <input type="text" placeholder="City*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm bg-white" />
+                  </div>
+                  <textarea placeholder="Discuss Your Problem*" required rows={3} className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm resize-none bg-white"></textarea>
+                  <button type="submit" className="bg-[#1D70B8] hover:bg-[#155fc2] transition-colors text-white font-bold py-3.5 rounded-full mt-2 w-full shadow-md">
+                     SUBMIT
+                  </button>
+               </form>
+            </div>
+         </div>
       </section>
 
       {/* Scrolling Images Section */}

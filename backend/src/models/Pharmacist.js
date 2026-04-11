@@ -43,6 +43,9 @@ const pharmacistSchema = new mongoose.Schema({
         enum: ['Pending', 'Approved', 'Rejected'],
         default: 'Pending'
     },
+    documents: [{
+        type: String // File URLs for uploaded documents
+    }],
     profileImage: {
         type: String,
         default: 'no-photo.jpg'
@@ -56,9 +59,9 @@ const pharmacistSchema = new mongoose.Schema({
 });
 
 // Encrypt password using bcrypt
-pharmacistSchema.pre('save', async function(next) {
+pharmacistSchema.pre('save', async function() {
     if (!this.isModified('password')) {
-        next();
+        return;
     }
 
     const salt = await bcrypt.genSalt(10);

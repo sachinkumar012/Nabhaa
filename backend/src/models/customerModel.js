@@ -33,6 +33,11 @@ const customerSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    status: {
+        type: String,
+        enum: ['active', 'blocked'],
+        default: 'active'
+    },
     createdAt: {
         type: Date,
         default: Date.now

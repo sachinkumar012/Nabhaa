@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
 const api = axios.create({
-    baseURL: (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000') + '/api', // Dynamic Backend URL
+    baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api', // Dynamic Backend URL
     headers: {
         'Content-Type': 'application/json'
     }

@@ -33,7 +33,8 @@ export default function PharmacistMedicines() {
         description: '',
         expiryDate: '',
         requiresPrescription: false,
-        manufacturer: ''
+        manufacturer: '',
+        images: []
     });
 
     useEffect(() => {
@@ -68,7 +69,8 @@ export default function PharmacistMedicines() {
                 description: medicine.description || '',
                 expiryDate: medicine.expiryDate ? new Date(medicine.expiryDate).toISOString().split('T')[0] : '',
                 requiresPrescription: medicine.requiresPrescription,
-                manufacturer: medicine.manufacturer
+                manufacturer: medicine.manufacturer,
+                images: medicine.images || []
             });
         } else {
             setCurrentMedicine(null);
@@ -82,7 +84,8 @@ export default function PharmacistMedicines() {
                 description: '',
                 expiryDate: '',
                 requiresPrescription: false,
-                manufacturer: ''
+                manufacturer: '',
+                images: []
             });
         }
         setIsModalOpen(true);
@@ -104,6 +107,34 @@ export default function PharmacistMedicines() {
         } catch (err) {
             console.error("Failed to save medicine", err);
         }
+    };
+
+    const handleImageUpload = (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+
+        Promise.all(files.map(file => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }))
+        .then(base64Images => {
+            setFormData(prev => ({
+                ...prev,
+                images: [...(prev.images || []), ...base64Images]
+            }));
+        })
+        .catch(err => console.error("Error converting images:", err));
+    };
+
+    const removeImage = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            images: prev.images.filter((_, i) => i !== index)
+        }));
     };
 
     const handleDelete = async (id) => {
@@ -355,6 +386,47 @@ export default function PharmacistMedicines() {
                                         value={formData.description}
                                         onChange={(e) => setFormData({...formData, description: e.target.value})}
                                     ></textarea>
+                                </div>
+                                <div className="mt-8 space-y-2">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Medicine Images</label>
+                                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:bg-slate-50 transition-all border-indigo-100 group bg-slate-50/50">
+                                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-indigo-400 group-hover:scale-110 group-hover:text-indigo-600 transition-all">
+                                            <FiUploadCloud size={24} />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm font-bold text-slate-700">Drag & drop multiple images or</p>
+                                            <p className="text-xs text-slate-400 font-medium mt-1">PNG, JPG up to 5MB each</p>
+                                        </div>
+                                        <input 
+                                            type="file" 
+                                            multiple 
+                                            accept="image/*"
+                                            className="hidden" 
+                                            id="image-upload"
+                                            onChange={handleImageUpload}
+                                        />
+                                        <label htmlFor="image-upload" className="mt-2 px-5 py-2.5 bg-white border border-slate-200 text-indigo-600 rounded-xl text-xs font-black uppercase tracking-widest cursor-pointer shadow-sm hover:border-indigo-600 transition-all">
+                                            Select Files
+                                        </label>
+                                    </div>
+                                    {formData.images && formData.images.length > 0 && (
+                                        <div className="flex flex-wrap gap-4 mt-6">
+                                            {formData.images.map((img, index) => (
+                                                <div key={index} className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm group">
+                                                    <img src={img} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => removeImage(index)}
+                                                            className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 hover:scale-110 transition-all shadow-lg"
+                                                        >
+                                                            <FiTrash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 
                                 <button 

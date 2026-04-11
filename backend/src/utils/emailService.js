@@ -93,9 +93,9 @@ const createTransporter = (port) => {
     port,
     secure,
     auth: { user, pass },
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 10000,
+    connectionTimeout: 20000,
+    greetingTimeout: 15000,
+    socketTimeout: 25000,
     tls: { rejectUnauthorized: false },
   };
 

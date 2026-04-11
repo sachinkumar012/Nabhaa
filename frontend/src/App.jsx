@@ -43,6 +43,13 @@ import PharmacistLabTests from './pages/Pharmacist/LabTests';
 import PharmacistAnalytics from './pages/Pharmacist/Analytics';
 import PharmacistProfile from './pages/Pharmacist/Profile';
 import AdminLogin from './pages/AdminLogin';
+import AdminLayout from './components/Admin/AdminLayout';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminAppointments from './pages/Admin/AdminAppointments';
+import AdminDoctors from './pages/Admin/AdminDoctors';
+import AdminOrders from './pages/Admin/AdminOrders';
+import AdminUsers from './pages/Admin/AdminUsers';
+import AdminPartners from './pages/Admin/AdminPartners';
 
 import PatientLayout from './components/Layout/PatientLayout';
 
@@ -79,7 +86,12 @@ function App() {
 
                     {/* Admin Routes */}
                     <Route path="/admin/login" element={<AdminLogin />} />
-                    <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><div>Admin Dashboard Placeholder</div></ProtectedRoute>} />
+                    <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout><AdminDashboard /></AdminLayout></ProtectedRoute>} />
+                    <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout><AdminAppointments /></AdminLayout></ProtectedRoute>} />
+                    <Route path="/admin/doctors" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout><AdminDoctors /></AdminLayout></ProtectedRoute>} />
+                    <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout><AdminOrders /></AdminLayout></ProtectedRoute>} />
+                    <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout><AdminUsers /></AdminLayout></ProtectedRoute>} />
+                    <Route path="/admin/partners" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout><AdminPartners /></AdminLayout></ProtectedRoute>} />
 
                     {/* PATIENT ROUTES (Wrapped in PatientLayout) */}
                     <Route path="*" element={
