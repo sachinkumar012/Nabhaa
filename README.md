@@ -61,7 +61,7 @@ cd Nabhaa
 ```
 
 ### 2. Environment Variables
-You'll need to set up `.env` files in each of the environments.
+You'll need to set up the `.env` files in each of the environments.
 - **backend/.env**: Database URI, JWT Secret, Cloudinary credentials, Razorpay Keys, etc.
 - **frontend/.env**: Backend API URL, Socket server URL, etc.
 - **admin/.env**: Backend API URL, Socket server URL, etc.
