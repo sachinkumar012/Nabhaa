@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
 import { Heart, Users, Shield, Globe, Award, Target } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import AnimatedCounter from '../components/UI/AnimatedCounter';
 
 export default function About() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   const values = [
     {
@@ -68,14 +68,14 @@ export default function About() {
           >
             {t('aboutUs')}
           </motion.h1>
-          <motion.p
+            <motion.p
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="text-gray-600"
-            style={{ fontSize: '1.25rem', maxWidth: '800px', margin: '0 auto' }}
+            style={{ fontSize: '1.15rem', maxWidth: '900px', margin: '0 auto', lineHeight: '1.6' }}
           >
-            Bridging the healthcare gap in rural Punjab through technology, compassion, and community-centered care.
+            A complete Multilingual Telehealth Progressive Web Application (PWA) equipped with a Multilingual Voice-Language Interface supporting English, Hindi, and Punjabi. We leverage Natural Language Processing (NLP) to map spoken dialects into standardized medical codes for accurate healthcare assistance.
           </motion.p>
         </div>
       </section>
@@ -90,16 +90,16 @@ export default function About() {
               transition={{ delay: 0.2 }}
             >
               <h2>{t('mission')}</h2>
-              <p className="text-gray-600" style={{ marginBottom: '1.5rem' }}>
-                {t('missionText')}
+              <p className="text-gray-600" style={{ marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                The entire application interface—including navigation, forms, dashboards, chatbot, notifications, and voice assistant—dynamically supports English, Hindi, and Punjabi through a seamless language-switching system. The platform is designed to provide accessible and user-friendly digital healthcare services for multilingual users, especially in rural and regional communities.
               </p>
-              <p className="text-gray-600" style={{ marginBottom: '1.5rem' }}>
-                Founded in Nabha, Punjab, we understand the unique challenges faced by rural communities in accessing quality healthcare. Our platform combines modern technology with traditional values to create a healthcare solution that truly serves the people.
+              <p className="text-gray-600" style={{ marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                Our system includes features such as AI-powered symptom checking, multilingual voice recognition, teleconsultation, appointment booking, medical report management, emergency support, medicine reminders, and secure authentication. The Progressive Web Application architecture ensures offline support, fast performance, mobile responsiveness, and installable app capabilities across devices.
               </p>
               <div className="card" style={{ backgroundColor: 'var(--primary-50)', border: 'none' }}>
                 <h3 style={{ color: 'var(--primary-800)', marginBottom: '0.75rem' }}>Our Vision</h3>
                 <p style={{ color: 'var(--primary-700)', margin: 0 }}>
-                  To become the leading rural healthcare platform in India, ensuring that geographical barriers never prevent anyone from receiving quality medical care.
+                  To enhance healthcare accessibility by bridging communication gaps between patients and digital healthcare systems through multilingual interaction and intelligent NLP-based symptom interpretation.
                 </p>
               </div>
             </motion.div>

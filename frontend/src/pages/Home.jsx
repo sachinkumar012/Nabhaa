@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Heart, Users, Shield, Clock, ArrowRight, Building2, Video, Pill, Search, Calendar, FileText } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import AppointmentChatBot from '../components/AppointmentChatBot';
 import AnimatedCounter from '../components/UI/AnimatedCounter';
 import { nabhaHospitals } from '../data/hospitalsData';
@@ -16,15 +16,38 @@ import { useState, useEffect } from 'react';
 import doctorKidneyBg from '../assets/doctor_tablet_kidney_bg.png';
 import infrastructureBg from '../assets/hospital_infrastructure_bg.png';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
+import apiClient from '../services/apiClient';
 
 export default function Home() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
+  const [consultData, setConsultData] = useState({ name: '', mobile: '', city: '', problem: '' });
+  const [consultLoading, setConsultLoading] = useState(false);
+  const [consultSuccess, setConsultSuccess] = useState(false);
+
+  const handleConsultSubmit = async (e) => {
+    e.preventDefault();
+    setConsultLoading(true);
+    try {
+      const res = await apiClient.post('/public/consultation', consultData);
+      if (res.data.success) {
+        setConsultSuccess(true);
+        setConsultData({ name: '', mobile: '', city: '', problem: '' });
+        setTimeout(() => setConsultSuccess(false), 3000);
+      } else {
+        alert(res.data.message || 'Submission failed');
+      }
+    } catch (err) {
+      alert('An error occurred. Please try again.');
+    } finally {
+      setConsultLoading(false);
+    }
+  };
 
   const facilities = [
     {
       icon: Video,
-      title: 'Video Consultation',
+      title: t('home.features.telemedicine') || 'Video Consultation',
       description: 'Connect with doctors remotely through secure video calls for instant medical advice.',
       image: videocallImage,
       isImageFile: true,
@@ -33,7 +56,7 @@ export default function Home() {
     },
     {
       icon: Pill,
-      title: 'Pharmacy Services',
+      title: t('home.features.pharmacy') || 'Pharmacy Services',
       description: 'Order medicines online with home delivery and get expert pharmaceutical guidance.',
       image: pharmacyImage,
       isImageFile: true,
@@ -42,7 +65,7 @@ export default function Home() {
     },
     {
       icon: Search,
-      title: 'Symptom Checker',
+      title: t('home.features.aiSymptom') || 'Symptom Checker',
       description: 'AI-powered symptom analysis to help you understand your health conditions better.',
       image: symptomImage,
       isImageFile: true,
@@ -132,19 +155,27 @@ export default function Home() {
            {/* E-Consultation Floating Form (Desktop) */}
            <div className="hidden lg:block absolute right-[5%] xl:right-[15%] top-1/2 -translate-y-1/2 bg-white rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden w-[380px] z-30">
               <div className="bg-[#E51C23] text-white text-center py-3 font-bold text-[15px] tracking-wide">
-                 FREE E-CONSULTATION
+                 {t('home.getStarted') || 'FREE E-CONSULTATION'}
               </div>
-              <form className="p-6 flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); alert("Successfully submitted E-Consultation request!"); }}>
-                 <input type="text" placeholder="Name*" required className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm" />
-                 <div className="flex gap-4">
-                   <input type="tel" placeholder="Mobile*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm" />
-                   <input type="text" placeholder="City*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm" />
-                 </div>
-                 <textarea placeholder="Discuss Your Problem*" required rows={3} className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm resize-none"></textarea>
-                 <button type="submit" className="bg-[#1D70B8] hover:bg-[#155fc2] transition-colors text-white font-bold py-3.5 rounded-full mt-2 w-48 mx-auto shadow-md">
-                    SUBMIT
-                 </button>
-              </form>
+              {consultSuccess ? (
+                <div className="p-8 text-center bg-white flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-2">✓</div>
+                  <h3 className="font-bold text-gray-800">Request Sent!</h3>
+                  <p className="text-gray-600 text-xs">We will contact you shortly.</p>
+                </div>
+              ) : (
+                <form className="p-6 flex flex-col gap-4" onSubmit={handleConsultSubmit}>
+                   <input type="text" placeholder="Name*" required className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm" value={consultData.name} onChange={e => setConsultData({...consultData, name: e.target.value})} />
+                   <div className="flex gap-4">
+                     <input type="tel" placeholder="Mobile*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm" value={consultData.mobile} onChange={e => setConsultData({...consultData, mobile: e.target.value})} />
+                     <input type="text" placeholder="City*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm" value={consultData.city} onChange={e => setConsultData({...consultData, city: e.target.value})} />
+                   </div>
+                   <textarea placeholder="Discuss Your Problem*" required rows={3} className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm resize-none" value={consultData.problem} onChange={e => setConsultData({...consultData, problem: e.target.value})}></textarea>
+                   <button type="submit" disabled={consultLoading} className="bg-[#1D70B8] hover:bg-[#155fc2] disabled:opacity-70 transition-colors text-white font-bold py-3.5 rounded-full mt-2 w-48 mx-auto shadow-md">
+                      {consultLoading ? 'SENDING...' : 'SUBMIT'}
+                   </button>
+                </form>
+              )}
            </div>
         </div>
       )
@@ -208,20 +239,28 @@ export default function Home() {
       <section className="lg:hidden bg-white py-12 px-4 shadow-inner">
          <div className="max-w-md mx-auto">
             <div className="bg-[#E51C23] text-white text-center py-3 rounded-t-lg font-bold text-[15px] tracking-wide">
-               FREE E-CONSULTATION
+               {t('home.getStarted') || 'FREE E-CONSULTATION'}
             </div>
             <div className="bg-gray-50 p-6 rounded-b-lg border border-gray-200 shadow-sm">
-               <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); alert("Successfully submitted E-Consultation request!"); }}>
-                  <input type="text" placeholder="Name*" required className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm bg-white" />
-                  <div className="flex gap-4">
-                    <input type="tel" placeholder="Mobile*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm bg-white" />
-                    <input type="text" placeholder="City*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm bg-white" />
-                  </div>
-                  <textarea placeholder="Discuss Your Problem*" required rows={3} className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm resize-none bg-white"></textarea>
-                  <button type="submit" className="bg-[#1D70B8] hover:bg-[#155fc2] transition-colors text-white font-bold py-3.5 rounded-full mt-2 w-full shadow-md">
-                     SUBMIT
-                  </button>
-               </form>
+               {consultSuccess ? (
+                 <div className="py-8 text-center flex flex-col items-center justify-center">
+                   <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-2">✓</div>
+                   <h3 className="font-bold text-gray-800">Request Sent!</h3>
+                   <p className="text-gray-600 text-xs">We will contact you shortly.</p>
+                 </div>
+               ) : (
+                 <form className="flex flex-col gap-4" onSubmit={handleConsultSubmit}>
+                    <input type="text" placeholder="Name*" required className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm bg-white" value={consultData.name} onChange={e => setConsultData({...consultData, name: e.target.value})} />
+                    <div className="flex gap-4">
+                      <input type="tel" placeholder="Mobile*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm bg-white" value={consultData.mobile} onChange={e => setConsultData({...consultData, mobile: e.target.value})} />
+                      <input type="text" placeholder="City*" required className="w-1/2 px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm bg-white" value={consultData.city} onChange={e => setConsultData({...consultData, city: e.target.value})} />
+                    </div>
+                    <textarea placeholder="Discuss Your Problem*" required rows={3} className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-[#1D70B8] text-sm resize-none bg-white" value={consultData.problem} onChange={e => setConsultData({...consultData, problem: e.target.value})}></textarea>
+                    <button type="submit" disabled={consultLoading} className="bg-[#1D70B8] hover:bg-[#155fc2] disabled:opacity-70 transition-colors text-white font-bold py-3.5 rounded-full mt-2 w-full shadow-md">
+                       {consultLoading ? 'SENDING...' : 'SUBMIT'}
+                    </button>
+                 </form>
+               )}
             </div>
          </div>
       </section>

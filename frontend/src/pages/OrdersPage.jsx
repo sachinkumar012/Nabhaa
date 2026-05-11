@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Package, ChevronRight, Clock, CheckCircle, Truck, XCircle,
   ArrowLeft, ShoppingBag, Loader2, AlertCircle, Home,
-  ChevronDown, ChevronUp, MapPin, Receipt, Image as ImageIcon
+  ChevronDown, ChevronUp, MapPin, Receipt, Image as ImageIcon,
+  CreditCard, Zap, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 
 /* ─── Status Config ────────────────────────────────────────────────────────── */
-const STATUS_STEPS = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+const STATUS_STEPS = ['Pending', 'Accepted', 'Processing', 'Packed', 'Out for Delivery', 'Delivered'];
 
 const STATUS_CONFIG = {
   Pending:            { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-500' },
@@ -24,10 +26,12 @@ const STATUS_CONFIG = {
 };
 
 const STEP_ICONS = {
-  Pending:    <Clock size={16} />,
-  Processing: <Package size={16} />,
-  Shipped:    <Truck size={16} />,
-  Delivered:  <CheckCircle size={16} />,
+  Pending:             <Clock size={14} />,
+  Accepted:            <CheckCircle size={14} />,
+  Processing:          <Package size={14} />,
+  Packed:              <Package size={14} />,
+  'Out for Delivery':  <Truck size={14} />,
+  Delivered:           <CheckCircle size={14} />,
 };
 
 const StatusBadge = ({ status }) => {
@@ -46,43 +50,87 @@ const formatDate = (ds) =>
 const formatTime = (ds) => 
   new Date(ds).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
-/* ─── Main Component ──────────────────────────────────────────────────────── */
 const OrdersPage = () => {
   const { user, token } = useAuth();
+  const { onOrderUpdate } = useSocket();
   const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [payingOrderId, setPayingOrderId] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState('All');
   const [expandedOrders, setExpandedOrders] = useState(new Set());
 
+  const fetchOrders = useCallback(async () => {
+    if (!user) return;
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/orders/myorders?userId=${user._id || user.id}`,
+        { headers }
+      );
+      if (!res.ok) throw new Error('Failed to load orders');
+      const data = await res.json();
+      const sorted = Array.isArray(data) ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
+      setOrders(sorted);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, token]);
+
   useEffect(() => {
     if (!user) { navigate('/pharmacy'); return; }
-    const fetchOrders = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/orders/myorders?userId=${user._id || user.id}`,
-          { headers }
-        );
-        if (!res.ok) throw new Error('Failed to load orders');
-        const data = await res.json();
-        const sorted = Array.isArray(data) ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
-        setOrders(sorted);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchOrders();
-  }, [user, token, navigate]);
+  }, [user, navigate, fetchOrders]);
+
+  // Real-time order status updates via Socket.IO
+  useEffect(() => {
+    const unsub = onOrderUpdate((data) => {
+      setOrders(prev => prev.map(order => {
+        if (String(order._id) === String(data.orderId)) {
+          return { 
+            ...order, 
+            status: data.status || order.status,
+            isPaid: data.isPaid ?? order.isPaid,
+            statusHistory: data.statusHistory || order.statusHistory
+          };
+        }
+        return order;
+      }));
+      // Re-fetch if it's a new order event
+      if (data.event === 'payment_success') fetchOrders();
+    });
+    return unsub;
+  }, [onOrderUpdate, fetchOrders]);
+
+  const handlePayNow = async (orderId) => {
+    setPaymentLoading(true);
+    setPayingOrderId(orderId);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/payments/create-razorpay-link/${orderId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.demo) {
+        alert(`Demo Mode: Razorpay keys not configured.\n\nIn production, a payment link would be sent to your email.\nOrder: #${String(orderId).slice(-8).toUpperCase()}`);
+      } else if (data.paymentLink) {
+        window.open(data.paymentLink, '_blank');
+      }
+    } catch (err) {
+      console.error('Payment link error:', err);
+    } finally {
+      setPaymentLoading(false);
+      setPayingOrderId(null);
+    }
+  };
 
   const toggleOrder = (orderId) => {
     setExpandedOrders(prev => {
@@ -214,22 +262,37 @@ const OrdersPage = () => {
               const tax = order.taxPrice || 0;
               const status = order.status || 'Pending';
               const isCancelled = ['Cancelled', 'Rejected'].includes(status);
-              
-              const mapStatusToIdx = (s) => {
-                if (['Pending'].includes(s)) return 0;
-                if (['Accepted', 'Processing', 'Confirmed'].includes(s)) return 1;
-                if (['Packed', 'Out for Delivery', 'Shipped'].includes(s)) return 2;
-                if (['Delivered'].includes(s)) return 3;
-                return 0;
-              };
-              const currentStepIdx = mapStatusToIdx(status);
               const createdAt = order.createdAt || order.orderDate;
+              const isCodUnpaid = (order.paymentMethod === 'COD' || order.paymentMethod === 'Cash on Delivery') && !order.isPaid && !isCancelled;
 
               return (
                 <div
                   key={orderId}
                   className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300 transform hover:scale-[1.005]"
                 >
+                  {/* ── COD Payment Banner ── */}
+                  {isCodUnpaid && (
+                    <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                        <CreditCard size={16} className="text-amber-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-amber-800">Pay online for priority dispatch</p>
+                        <p className="text-[10px] text-amber-600 font-medium">COD orders take longer — switch to online payment for faster delivery</p>
+                      </div>
+                      <button
+                        onClick={() => handlePayNow(orderId)}
+                        disabled={paymentLoading && payingOrderId === orderId}
+                        className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm disabled:opacity-60"
+                      >
+                        {paymentLoading && payingOrderId === orderId ? (
+                          <><Loader2 size={12} className="animate-spin" /> Processing...</>
+                        ) : (
+                          <><Zap size={12} /> Pay Now</>
+                        )}
+                      </button>
+                    </div>
+                  )}
                   {/* ── Order Header Row ── */}
                   <div className="p-5 sm:p-6 border-b border-gray-100 bg-white flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                     <div>
@@ -296,31 +359,43 @@ const OrdersPage = () => {
                   {isExpanded && (
                     <div className="border-t border-gray-100 p-5 sm:p-6 bg-white space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
                       
-                      {/* Timeline */}
+                      {/* Timeline — 7 stages */}
                       {!isCancelled ? (
                         <div className="mb-2">
                           <h4 className="text-sm font-bold text-gray-900 mb-6 uppercase tracking-wider flex items-center gap-2">
                             <Truck size={16} className="text-teal-600" /> Delivery Status
                           </h4>
-                          <div className="relative mx-4 sm:mx-8">
+                          <div className="relative mx-2 sm:mx-4">
                             <div className="absolute top-4 left-0 right-0 h-1 bg-gray-100 rounded-full z-0" />
                             <div
                               className="absolute top-4 left-0 h-1 bg-teal-500 rounded-full z-0 transition-all duration-700 ease-out"
-                              style={{ width: currentStepIdx < 0 ? '0%' : `${(currentStepIdx / (STATUS_STEPS.length - 1)) * 100}%` }}
+                              style={{ width: (() => {
+                                const idx = STATUS_STEPS.indexOf(status);
+                                return idx < 0 ? '0%' : `${(idx / (STATUS_STEPS.length - 1)) * 100}%`;
+                              })() }}
                             />
                             <div className="relative z-10 flex justify-between">
-                              {STATUS_STEPS.map((step, idx) => {
-                                const isCompleted = currentStepIdx >= idx;
-                                const isCurrent = currentStepIdx === idx;
+                              {STATUS_STEPS.map((step) => {
+                                const stepIdx = STATUS_STEPS.indexOf(step);
+                                const currIdx = (() => {
+                                  const i = STATUS_STEPS.indexOf(status);
+                                  if (i >= 0) return i;
+                                  if (['Confirmed', 'Accepted'].includes(status)) return 1;
+                                  if (['Packed', 'Shipped'].includes(status)) return 3;
+                                  return 0;
+                                })();
+                                const isCompleted = currIdx >= stepIdx;
+                                const isCurrent = currIdx === stepIdx;
+                                const Icon = STEP_ICONS[step] || <Clock size={12} />;
                                 return (
-                                  <div key={step} className="flex flex-col items-center gap-3">
-                                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300
+                                  <div key={step} className="flex flex-col items-center gap-2 min-w-0">
+                                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all duration-300
                                       ${isCompleted ? 'bg-teal-500 text-white shadow-md shadow-teal-200' : 'bg-white border-2 border-gray-200 text-gray-300'}
                                       ${isCurrent ? 'ring-4 ring-teal-50 scale-110' : ''}`}
                                     >
-                                      {STEP_ICONS[step]}
+                                      {Icon}
                                     </div>
-                                    <p className={`text-[10px] sm:text-xs font-bold text-center ${isCompleted ? 'text-gray-900' : 'text-gray-400'}`}>
+                                    <p className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight max-w-[56px] ${isCompleted ? 'text-gray-900' : 'text-gray-400'}`}>
                                       {step}
                                     </p>
                                   </div>

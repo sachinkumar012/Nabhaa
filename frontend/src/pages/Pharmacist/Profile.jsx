@@ -13,15 +13,18 @@ import {
     FiShield,
     FiExternalLink,
     FiSettings,
-    FiArrowRight
+    FiArrowRight,
+    FiAward
 } from 'react-icons/fi';
 import PharmacistSidebar from '../../components/Pharmacist/PharmacistSidebar';
 import { useAuth } from '../../context/AuthContext';
+import DigitalCertificate from '../../components/Pharmacist/DigitalCertificate';
 
 export default function PharmacistProfile() {
     const { pharmacist, pharmacistToken, loginPharmacist } = useAuth();
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [showCert, setShowCert] = useState(false);
     const [formData, setFormData] = useState({
         name: pharmacist?.name || '',
         pharmacyName: pharmacist?.pharmacyName || '',
@@ -71,6 +74,7 @@ export default function PharmacistProfile() {
     };
 
     return (
+        <>
         <div className="flex min-h-screen bg-[#F8FAFC]">
             <PharmacistSidebar />
             
@@ -131,8 +135,23 @@ export default function PharmacistProfile() {
                                     </div>
                                 </div>
                             </div>
-                            <button className="w-full mt-10 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-black rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2 relative z-10">
-                                <FiExternalLink /> View Digital Certificate
+                            {/* Animated certificate CTA button */}
+                            <button
+                                onClick={() => setShowCert(true)}
+                                className="w-full mt-10 relative group overflow-hidden rounded-2xl"
+                            >
+                                {/* Shimmer gradient background */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-amber-600/20 group-hover:opacity-0 transition-opacity duration-300" />
+                                <div className="relative z-10 flex items-center justify-center gap-3 py-4 border border-amber-400/30 group-hover:border-amber-400/80 rounded-2xl transition-all duration-300">
+                                    <div className="w-8 h-8 rounded-xl bg-amber-400/20 group-hover:bg-white/20 flex items-center justify-center transition-colors">
+                                        <FiAward className="text-amber-400 group-hover:text-white transition-colors" size={16} />
+                                    </div>
+                                    <span className="text-amber-300 group-hover:text-white font-black text-sm tracking-widest uppercase transition-colors">View Digital Certificate</span>
+                                    <FiExternalLink className="text-amber-400/60 group-hover:text-white/80 transition-colors" size={14} />
+                                </div>
+                                {/* Shine sweep animation */}
+                                <div className="absolute inset-0 -skew-x-12 -translate-x-full group-hover:translate-x-[200%] transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                             </button>
                         </div>
                     </div>
@@ -254,5 +273,13 @@ export default function PharmacistProfile() {
                 </div>
             </main>
         </div>
+        {/* ── Digital Certificate Modal ── */}
+        {showCert && (
+            <DigitalCertificate
+                pharmacist={pharmacist}
+                onClose={() => setShowCert(false)}
+            />
+        )}
+        </>  
     );
 }

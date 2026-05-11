@@ -1,0 +1,128 @@
+{
+  "nav": {
+    "home": "ਘਰ",
+    "doctors": "ਡਾਕਟਰ",
+    "records": "ਸਿਹਤ ਰਿਕਾਰਡ",
+    "pharmacy": "ਦਵਾਈ ਦੁਕਾਨ",
+    "symptomsNav": "ਲੱਛਣ ਜਾਂਚਕਰਤਾ",
+    "about": "ਸਾਡੇ ਬਾਰੇ",
+    "labTests": "ਲੈਬ ਟੈਸਟ",
+    "abha": "ਆਭਾ (ABHA)",
+    "insurance": "ਬੀਮਾ",
+    "blog": "ਸਿਹਤ ਬਲੌਗ",
+    "login": "ਲਾਗਇਨ / ਰਜਿਸਟਰ",
+    "cart": "ਕਾਰਟ",
+    "hospitals": "ਹਸਪਤਾਲ",
+    "aiAnalyzer": "ਏਆਈ ਵਿਸ਼ਲੇਸ਼ਕ"
+  },
+  "header": {
+    "helpline": "ਹੈਲਪਲਾਈਨ : 9318496221",
+    "opdTimings": "ਓਪੀਡੀ ਸਮਾਂ : 10:00AM - 5:00PM",
+    "viewIn": "ਇਸ ਵਿੱਚ ਦੇਖੋ :",
+    "hospitalTitle": "ਨਾਭਾ ਹਸਪਤਾਲ",
+    "hospitalSubtitle": "ਅਤੇ ਲਾਈਫਲਾਈਨ ਮੈਡੀਕਲ ਸੰਸਥਾਵਾਂ",
+    "searchPlaceholder": "ਖੋਜੋ...",
+    "freeConsultation": "ਮੁਫਤ ਈ-ਸਲਾਹ",
+    "patientLogin": "ਮਰੀਜ਼ ਲਾਗਿਨ",
+    "patientLoginDesc": "ਡਾਕਟਰ ਅਤੇ ਟੈਸਟ ਬੁੱਕ ਕਰੋ",
+    "partnerLogin": "ਪਾਰਟਨਰ ਲਾਗਿਨ",
+    "partnerLoginDesc": "ਵਿਕਰੇਤਾ ਅਤੇ ਫਾਰਮੇਸੀ ਪੋਰਟਲ",
+    "doctorLogin": "ਡਾਕਟਰ ਲਾਗਿਨ",
+    "doctorLoginDesc": "ਸਲਾਹ ਪ੍ਰਬੰਧਨ",
+    "adminPortal": "ਐਡਮਿਨ ਪੋਰਟਲ",
+    "adminPortalDesc": "ਸਿਸਟਮ ਪ੍ਰਸ਼ਾਸਨ",
+    "logout": "ਲਾਗ ਆਉਟ",
+    "myOrders": "ਮੇਰੇ ਆਰਡਰ",
+    "myProfile": "ਮੇਰੀ ਪ੍ਰੋਫਾਈਲ",
+    "medicalRecords": "ਮੈਡੀਕਲ ਰਿਕਾਰਡ",
+    "selectPortal": "ਪੋਰਟਲ ਚੁਣੋ",
+    "bookAppointment": "ਅਪੌਇੰਟਮੈਂਟ ਬੁੱਕ ਕਰੋ",
+    "settings": "ਸੈਟਿੰਗਜ਼",
+    "language": "ਭਾਸ਼ਾ",
+    "menu": "ਮੇਨੂ"
+  },
+  "home": {
+    "welcome": "ਨਾਭਾ ਹੈਲਥਕੇਅਰ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ",
+    "subtitle": "ਪੇਂਡੂ ਭਾਈਚਾਰਿਆਂ ਲਈ ਗੁਣਵੱਤਾ ਸਿਹਤ ਸੇਵਾ",
+    "description": "ਘਰ ਦੇ ਆਰਾਮ ਤੋਂ ਡਾਕਟਰਾਂ ਨਾਲ ਮਿਲੋ, ਸਿਹਤ ਰਿਕਾਰਡ ਪ੍ਰਬੰਧਿਤ ਕਰੋ, ਅਤੇ ਮੈਡੀਕਲ ਗਾਈਡੈਂਸ ਪ੍ਰਾਪਤ ਕਰੋ।",
+    "getStarted": "ਸ਼ੁਰੂ ਕਰੋ",
+    "features": {
+      "aiSymptom": "AI ਲੱਛਣ ਜਾਂਚਕਰਤਾ",
+      "telemedicine": "ਟੈਲੀਮੈਡੀਸਨ",
+      "pharmacy": "ਈ-ਫਾਰਮੇਸੀ",
+      "abha": "ਆਭਾ ਏਕੀਕਰਣ"
+    }
+  },
+  "doctors": {
+    "title": "ਸਾਡੇ ਡਾਕਟਰ",
+    "availability": "ਹੁਣ ਉਪਲਬਧ",
+    "unavailable": "ਰੁਝਿਆ ਹੋਇਆ",
+    "consultNow": "ਹੁਣ ਸਲਾਹ ਲਓ",
+    "experience": "ਸਾਲ ਦਾ ਤਜਰਬਾ",
+    "specialty": "ਵਿਸ਼ੇਸ਼ਤਾ",
+    "location": "ਸਥਾਨ",
+    "searchPlaceholder": "ਨਾਮ ਜਾਂ ਵਿਸ਼ੇਸ਼ਤਾ ਦੁਆਰਾ ਡਾਕਟਰਾਂ ਦੀ ਖੋਜ ਕਰੋ..."
+  },
+  "records": {
+    "title": "ਸਿਹਤ ਰਿਕਾਰਡ",
+    "addRecord": "ਨਵਾਂ ਰਿਕਾਰਡ ਜੋੜੋ",
+    "patientName": "ਮਰੀਜ਼ ਦਾ ਨਾਮ",
+    "symptoms": "ਲੱਛਣ",
+    "diagnosis": "ਨਿਦਾਨ",
+    "prescription": "ਦਵਾਈ",
+    "date": "ਤਾਰੀਖ",
+    "save": "ਰਿਕਾਰਡ ਸੇਵ ਕਰੋ"
+  },
+  "pharmacy": {
+    "title": "ਫਾਰਮੇਸੀ",
+    "medicineAvailability": "ਦਵਾਈ ਦੀ ਉਪਲਬਧਤਾ",
+    "searchMedicine": "ਦਵਾਈ ਲੱਭੋ...",
+    "available": "ਉਪਲਬਧ",
+    "outOfStock": "ਸਟਾਕ ਵਿੱਚ ਨਹੀਂ",
+    "addToCart": "ਕਾਰਟ ਵਿੱਚ ਸ਼ਾਮਲ ਕਰੋ",
+    "buyNow": "ਹੁਣੇ ਖਰੀਦੋ",
+    "price": "ਕੀਮਤ",
+    "description": "ਵਰਣਨ"
+  },
+  "symptoms": {
+    "title": "AI ਲੱਛਣ ਜਾਂਚਕਰਤਾ",
+    "placeholder": "ਆਪਣੇ ਲੱਛਣ ਦੱਸੋ...",
+    "check": "ਲੱਛਣ ਜਾਂਚੋ",
+    "listening": "ਸੁਣ ਰਹੀ ਹਾਂ...",
+    "thinking": "ਨਾਭਾ ਸੋਚ ਰਹੀ ਹੈ...",
+    "speaking": "ਬੋਲ ਰਹੀ ਹਾਂ...",
+    "disclaimer": "⚠️ ਇਹ ਡਾਕਟਰੀ ਨਿਦਾਨ ਨਹੀਂ ਹੈ। ਹਮੇਸ਼ਾ ਡਾਕਟਰ ਦੀ ਸਲਾਹ ਲਓ।",
+    "startVoice": "ਵੌਇਸ ਸਲਾਹ ਸ਼ੁਰੂ ਕਰੋ",
+    "endVoice": "ਵੌਇਸ ਚੈਟ ਖਤਮ ਕਰੋ",
+    "quickSymptoms": "ਤੇਜ਼ ਲੱਛਣ",
+    "online": "ਆਨਲਾਈਨ"
+  },
+  "about": {
+    "title": "ਨਾਭਾ ਹੈਲਥਕੇਅਰ ਬਾਰੇ",
+    "mission": "ਸਾਡਾ ਮਿਸ਼ਨ",
+    "missionText": "ਤਕਨੀਕ ਰਾਹੀਂ ਪੇਂਡੂ ਭਾਈਚਾਰਿਆਂ ਨੂੰ ਪਹੁੰਚਯੋਗ, ਗੁਣਵੱਤਾ ਸਿਹਤ ਸੇਵਾਵਾਂ ਪ੍ਰਦਾਨ ਕਰਨਾ।"
+  },
+  "common": {
+    "loading": "ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...",
+    "close": "ਬੰਦ ਕਰੋ",
+    "cancel": "ਰੱਦ ਕਰੋ",
+    "language": "ਭਾਸ਼ਾ",
+    "save": "ਸੇਵ ਕਰੋ",
+    "submit": "ਜਮ੍ਹਾਂ ਕਰੋ",
+    "error": "ਕੋਈ ਗਲਤੀ ਹੋਈ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    "success": "ਸਫਲਤਾ!"
+  },
+  "auth": {
+    "welcomeBack": "ਵਾਪਸੀ 'ਤੇ ਸੁਆਗਤ ਹੈ",
+    "createAccount": "ਖਾਤਾ ਬਣਾਓ",
+    "email": "ਈਮੇਲ ਪਤਾ",
+    "password": "ਪਾਸਵਰਡ",
+    "name": "ਪੂਰਾ ਨਾਮ",
+    "phone": "ਫੋਨ ਨੰਬਰ",
+    "login": "ਲਾਗਇਨ",
+    "register": "ਰਜਿਸਟਰ",
+    "forgotPassword": "ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ?",
+    "dontHaveAccount": "ਕੀ ਤੁਹਾਡੇ ਕੋਲ ਖਾਤਾ ਨਹੀਂ ਹੈ?",
+    "alreadyHaveAccount": "ਕੀ ਪਹਿਲਾਂ ਹੀ ਖਾਤਾ ਹੈ?"
+  }
+}

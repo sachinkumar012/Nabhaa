@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Mic, MicOff, Send, Volume2, VolumeX, Stethoscope,
   AlertCircle, CheckCircle, ShoppingCart, MapPin,
@@ -11,9 +12,9 @@ const API_BASE = import.meta.env.VITE_API_URL;
 const AVATAR_IMG = "https://res.cloudinary.com/dnnkimx5e/image/upload/v1775154589/avatars/l974ooq6loifpxn0rlux.png";
 
 const LANG = {
-  en: { name:"EN", speechCode:"en-US", placeholder:"Describe your symptoms…", thinking:"Nabha is thinking…", listening:"Listening…", speaking:"Speaking…", disclaimer:"⚠️ Not a medical diagnosis. Always consult a doctor." },
-  hi: { name:"हिंदी", speechCode:"hi-IN", placeholder:"अपने लक्षण बताएं…", thinking:"नाभा सोच रही है…", listening:"सुन रही हूँ…", speaking:"बोल रही हूँ…", disclaimer:"⚠️ यह चिकित्सा निदान नहीं है।" },
-  pa: { name:"ਪੰਜਾਬੀ", speechCode:"pa-IN", placeholder:"ਆਪਣੇ ਲੱਛਣ ਦੱਸੋ…", thinking:"ਨਾਭਾ ਸੋਚ ਰਹੀ ਹੈ…", listening:"ਸੁਣ ਰਹੀ ਹਾਂ…", speaking:"ਬੋਲ ਰਹੀ ਹਾਂ…", disclaimer:"⚠️ ਇਹ ਡਾਕਟਰੀ ਨਿਦਾਨ ਨਹੀਂ ਹੈ।" },
+  en: { name:"EN", speechCode:"en-US" },
+  hi: { name:"हिंदी", speechCode:"hi-IN" },
+  pa: { name:"ਪੰਜਾਬੀ", speechCode:"pa-IN" },
 };
 
 /* ── Sub-components ─────────────────────────────────────────── */
@@ -89,19 +90,51 @@ export default function SymptomChecker() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [language, setLanguage] = useState("en");
   const [voiceMode, setVoiceMode] = useState(false);
-  const [status, setStatus] = useState("idle"); // idle | listening | thinking | speaking
+  const [status, setStatus] = useState("idle");
   const [addedSet, setAddedSet] = useState(new Set());
+  const { t, i18n } = useTranslation();
+  const rawLang = i18n.language || 'en';
+  const language = LANG[rawLang.split('-')[0]] ? rawLang.split('-')[0] : 'en';
 
   const L = LANG[language];
 
+  const [statusText, setStatusText] = useState("");
+
+  const AGENT_STATUS = {
+    thinking: [
+      { en: "Analyzing your symptoms...", hi: "लक्षणों का विश्लेषण कर रही हूँ...", pa: "ਲੱਛਣਾਂ ਦਾ ਵਿਸ਼ਲੇਸ਼ਣ ਕਰ ਰਹੀ ਹਾਂ..." },
+      { en: "Checking clinical protocols...", hi: "क्लिनिकल प्रोटोकॉल की जांच कर रही हूँ...", pa: "ਕਲੀਨਿਕਲ ਪ੍ਰੋਟੋਕੋਲ ਦੀ ਜਾਂਚ ਕਰ ਰਹੀ ਹਾਂ..." },
+      { en: "Correlating with database...", hi: "डेटाबेस के साथ मिलान कर रही हूँ...", pa: "ਡਾਟਾਬੇਸ ਨਾਲ ਮਿਲਾਨ ਕਰ ਰਹੀ ਹਾਂ..." },
+      { en: "Finalizing health guidance...", hi: "स्वास्थ्य मार्गदर्शन तैयार कर रही हूँ...", pa: "ਸਿਹਤ ਮਾਰਗਦਰਸ਼ਨ ਤਿਆਰ ਕਰ ਰਹੀ ਹਾਂ..." }
+    ]
+  };
+
   /* ── Welcome message ── */
   useEffect(() => {
-    const w = { en:"Hello! I'm Nabha AI, your personal health assistant. How are you feeling today?", hi:"नमस्ते! मैं नाभा AI हूँ, आपकी पर्सनल हेल्थ असिस्टेंट। आज आप कैसा महसूस कर रहे हैं?", pa:"ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਨਾਭਾ AI ਹਾਂ। ਅੱਜ ਤੁਸੀਂ ਕਿਵੇਂ ਮਹਿਸੂਸ ਕਰ ਰਹੇ ਹੋ?" };
-    setMessages([{ role:"ai", text:w[language], ts:Date.now() }]);
+    const w = { 
+      en: "Hello! I'm Nabha AI, your personal health assistant. I'm here to listen and help you feel better. How are you feeling today?", 
+      hi: "नमस्ते! मैं नाभा AI हूँ, आपकी पर्सनल हेल्थ असिस्टेंट। मैं आपकी बात सुनने और आपकी मदद करने के लिए यहाँ हूँ। आज आप कैसा महसूस कर रहे हैं?", 
+      pa: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਨਾਭਾ AI ਹਾਂ। ਮੈਂ ਤੁਹਾਡੀ ਮਦਦ ਕਰਨ ਲਈ ਇੱਥੇ ਹਾਂ। ਅੱਜ ਤੁਸੀਂ ਕਿਵੇਂ ਮਹਿਸੂਸ ਕਰ ਰਹੇ ਹੋ?" 
+    };
+    setMessages([{ role: "ai", text: w[language], ts: Date.now() }]);
     historyRef.current = [];
   }, [language]);
+
+  /* ── Agentic Status Rotation ── */
+  useEffect(() => {
+    if (isThinking) {
+      let idx = 0;
+      setStatusText(AGENT_STATUS.thinking[0][language]);
+      const int = setInterval(() => {
+        idx = (idx + 1) % AGENT_STATUS.thinking.length;
+        setStatusText(AGENT_STATUS.thinking[idx][language]);
+      }, 2500);
+      return () => clearInterval(int);
+    } else {
+      setStatusText(t('symptoms.thinking'));
+    }
+  }, [isThinking, language, t]);
 
   /* ── Auto-scroll ── */
   useEffect(() => {
@@ -308,7 +341,7 @@ export default function SymptomChecker() {
                 <div className="h-5 w-px bg-white/20 mx-1"/>
                 <div className="flex gap-0.5 p-0.5 bg-white/10 rounded-full border border-white/20">
                   {Object.entries(LANG).map(([code,l])=>(
-                    <button key={code} onClick={()=>{setLanguage(code);synthRef.current.cancel();}} className={`px-2.5 py-1 rounded-full text-[9px] font-bold transition-all ${language===code?'bg-white text-[#3B82F6] shadow-sm':'text-[#E2E8F0] hover:text-white'}`}>{code.toUpperCase()}</button>
+                    <button key={code} onClick={()=>{i18n.changeLanguage(code);synthRef.current.cancel();}} className={`px-2.5 py-1 rounded-full text-[9px] font-bold transition-all ${language===code?'bg-white text-[#3B82F6] shadow-sm':'text-[#E2E8F0] hover:text-white'}`}>{code.toUpperCase()}</button>
                   ))}
                 </div>
               </div>
@@ -376,7 +409,7 @@ export default function SymptomChecker() {
                       <span className="w-2 h-2 bg-[#60A5FA] rounded-full animate-bounce [animation-delay:150ms]"/>
                       <span className="w-2 h-2 bg-[#60A5FA] rounded-full animate-bounce [animation-delay:300ms]"/>
                     </div>
-                    <span className="text-xs text-[#6B7280] font-bold">{L.thinking}</span>
+                    <span className="text-xs text-[#6B7280] font-bold">{statusText}</span>
                   </div>
                 </div>
               )}
@@ -386,14 +419,14 @@ export default function SymptomChecker() {
             <div className="px-3 lg:px-6 py-3 lg:py-4 bg-white border-t border-[#E2E8F0] z-30">
               {isListening && (
                 <div className="flex items-center gap-2 mb-2 px-3 py-1 bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-[10px] font-bold rounded-full w-max animate-pulse mx-auto">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"/> {L.listening}
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"/> {t('symptoms.listening')}
                 </div>
               )}
               <div className="max-w-3xl mx-auto flex items-center gap-2 bg-[#F8FAFC] border-2 border-[#E2E8F0] rounded-full px-2 py-1 focus-within:border-[#3B82F6] focus-within:ring-4 focus-within:ring-blue-50 focus-within:bg-white transition-all shadow-sm">
                 <button onClick={isListening?stopListening:startListening} className={`p-2.5 rounded-full transition-all ${isListening?'bg-[#FEF3C7] text-[#D97706] scale-110':'text-[#94A3B8] hover:bg-[#EFF6FF] hover:text-[#3B82F6]'}`} title="Voice Input">
                   {isListening?<MicOff className="w-5 h-5"/>:<Mic className="w-5 h-5"/>}
                 </button>
-                <input type="text" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSend()} placeholder={L.placeholder} className="flex-1 bg-transparent py-2 px-1 text-sm text-[#1F2937] font-medium outline-none placeholder-[#94A3B8]"/>
+                <input type="text" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSend()} placeholder={t('symptoms.placeholder')} className="flex-1 bg-transparent py-2 px-1 text-sm text-[#1F2937] font-medium outline-none placeholder-[#94A3B8]"/>
                 <button onClick={handleSend} disabled={!input.trim()||isThinking} className="p-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full shadow-md hover:shadow-lg disabled:opacity-40 transition-all flex items-center justify-center h-10 w-10 shrink-0">
                   <Send className="w-4 h-4 ml-0.5"/>
                 </button>
@@ -446,7 +479,7 @@ export default function SymptomChecker() {
 
                 {/* Voice Consultation Button */}
                 <button onClick={toggleVoiceMode} className={`w-full mt-3 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 ${voiceMode?'bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white':'bg-gradient-to-r from-[#3B82F6] to-[#1E40AF] text-white'}`}>
-                  {voiceMode ? <><PhoneCall className="w-4 h-4"/>End Voice Chat</> : <><Phone className="w-4 h-4"/>Start Voice Consultation</>}
+                  {voiceMode ? <><PhoneCall className="w-4 h-4"/>{t('symptoms.endVoice')}</> : <><Phone className="w-4 h-4"/>{t('symptoms.startVoice')}</>}
                 </button>
 
                 {/* Feature tags */}
@@ -471,7 +504,7 @@ export default function SymptomChecker() {
             {/* Disclaimer */}
             <div className="bg-[#FEF2F2] rounded-xl border border-[#FEE2E2] p-2.5 items-start gap-2 hidden lg:flex">
               <Shield className="w-3.5 h-3.5 text-[#EF4444] shrink-0 mt-0.5"/>
-              <p className="text-[9px] text-[#991B1B] font-bold leading-relaxed">{L.disclaimer}</p>
+              <p className="text-[9px] text-[#991B1B] font-bold leading-relaxed">{t('symptoms.disclaimer')}</p>
             </div>
           </div>
 

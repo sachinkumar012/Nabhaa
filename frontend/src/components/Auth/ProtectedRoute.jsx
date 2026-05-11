@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-    const { user, pharmacist, admin, setAuthModalOpen } = useAuth();
+    const { user, pharmacist, admin, doctor, setAuthModalOpen } = useAuth();
     const location = useLocation();
 
     // Determine which auth object to use
@@ -14,6 +14,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     let activeUser = user;
     if (isPharmacistRoute) activeUser = pharmacist;
     if (isAdminRoute) activeUser = admin;
+    if (isDoctorRoute) activeUser = doctor;
 
     useEffect(() => {
         // Only trigger modal for patient routes if not logged in

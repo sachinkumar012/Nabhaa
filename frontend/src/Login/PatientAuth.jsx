@@ -1,45 +1,38 @@
 import {  useState } from 'react';
 
 const PatientAuth = () => {
-  const [authMode, setAuthMode] = useState("login"); // login or signup
-  const [method, setMethod] = useState("phone"); // phone or email
+  const [authMode, setAuthMode] = useState("login"); 
+  const [method, setMethod] = useState("phone"); 
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Handle Phone OTP Request
-  const sendOtp = () => {
+   const sendOtp = () => {
     if (!phone) {
       alert("Enter phone number");
       return;
     }
     console.log("Send OTP to:", phone);
-    // TODO: integrate Firebase/OTP service here
-    alert("OTP sent!");
+     alert("OTP sent!");
   };
 
-  // Handle Phone OTP Verification
-  const verifyOtp = () => {
+   const verifyOtp = () => {
     console.log("Verify OTP:", otp);
-    // TODO: verify OTP logic
-    alert("Phone verified successfully!");
+     alert("Phone verified successfully!");
   };
 
-  // Handle Email Signup/Login
-  const handleEmailAuth = (e) => {
+   const handleEmailAuth = (e) => {
     e.preventDefault();
     console.log(`${authMode} with Email:`, { email, password });
-    // TODO: backend authentication
-    alert(`${authMode} successful with email`);
+     alert(`${authMode} successful with email`);
   };
 
   return (
     <div className="auth-container">
       <h2>Patient {authMode === "login" ? "Login" : "Signup"}</h2>
 
-      {/* Toggle Login/Signup */}
-      <div>
+       <div>
         <button onClick={() => setAuthMode("login")}>Login</button>
         <button onClick={() => setAuthMode("signup")}>Signup</button>
       </div>

@@ -1,33 +1,40 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Globe, Stethoscope, Search, ShoppingCart, User, ChevronDown, ChevronRight, LogOut, FileText, Phone, Clock, Award, ShieldCheck, Package, Briefcase } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { useLocationContext } from '../../modules/location/presentation/LocationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import ConsultationModal from '../UI/ConsultationModal';
+import NotificationBell from '../UI/NotificationBell';
 
 /* ── Pharmacy dropdown sub-routes ─────────────────────────────────────────── */
-const PHARMACY_DROPDOWN = [
-  { name: 'Medicine', href: '/pharmacy', icon: '💊' },
-  { name: 'Lab Tests', href: '/lab-tests', icon: '🧪' },
-  { name: 'ABHA', href: '/abha', icon: '🆔' },
-  { name: 'Insurance', href: '/insurance', icon: '🛡' },
-];
-const PHARMACY_PATHS = PHARMACY_DROPDOWN.map(d => d.href);
+
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isPharmacyDropdownOpen, setIsPharmacyDropdownOpen] = useState(false);
   const [isMobilePharmacyOpen, setIsMobilePharmacyOpen] = useState(false);
+  const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
   const pharmacyRef = useRef(null);
   const userMenuRef = useRef(null);
 
-  const { t, currentLanguage, changeLanguage } = useLanguage();
+  const { t, i18n } = useTranslation();
+  const currentLanguage = i18n.language || 'en';
+  const changeLanguage = (lng) => i18n.changeLanguage(lng);
   const { user, logout, setAuthModalOpen } = useAuth();
   const { cartCount } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const PHARMACY_DROPDOWN = [
+    { name: t('nav.pharmacy'), href: '/pharmacy', icon: '💊' },
+    { name: t('nav.labTests'), href: '/lab-tests', icon: '🧪' },
+    { name: t('nav.abha'), href: '/abha', icon: '🆔' },
+    { name: t('nav.insurance'), href: '/insurance', icon: '🛡' },
+  ];
+  const PHARMACY_PATHS = PHARMACY_DROPDOWN.map(d => d.href);
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -37,26 +44,26 @@ export default function Header() {
 
   /* ── Desktop nav items (Pharmacy handled separately) ────────────────────── */
   const mainNav = [
-    { name: 'HOME', href: '/' },
-    { name: 'DOCTORS', href: '/doctors' },
-    { name: 'HOSPITALS', href: '/hospitals' },
-    { name: 'AI ANALYZER', href: '/prescription-analysis' },
-    { name: 'PHARMACY', href: null, isDropdown: true },
-    { name: 'SYMPTOM CHECKER', href: '/symptoms' },
-    { name: 'HEALTH BLOG', href: '/blog' },
-    { name: 'ABOUT', href: '/about' },
+    { name: t('nav.home'), href: '/' },
+    { name: t('nav.doctors'), href: '/doctors' },
+    { name: t('nav.hospitals'), href: '/hospitals' },
+    { name: t('nav.aiAnalyzer'), href: '/prescription-analysis' },
+    { name: t('nav.pharmacy'), href: null, isDropdown: true },
+    { name: t('nav.symptomsNav'), href: '/symptoms' },
+    { name: t('nav.blog'), href: '/blog' },
+    { name: t('nav.about'), href: '/about' },
   ];
 
   /* ── Mobile nav (Pharmacy is accordion) ─────────────────────────────────── */
   const mobileNav = [
-    { name: 'Home', href: '/' },
-    { name: 'Doctors', href: '/doctors' },
-    { name: 'Hospitals', href: '/hospitals' },
-    { name: 'AI Analyzer', href: '/prescription-analysis' },
-    { name: 'Pharmacy', href: null, isDropdown: true },
-    { name: 'Symptom Checker', href: '/symptoms' },
-    { name: 'Health Blog', href: '/blog' },
-    { name: 'About', href: '/about' },
+    { name: t('nav.home'), href: '/' },
+    { name: t('nav.doctors'), href: '/doctors' },
+    { name: t('nav.hospitals'), href: '/hospitals' },
+    { name: t('nav.aiAnalyzer'), href: '/prescription-analysis' },
+    { name: t('nav.pharmacy'), href: null, isDropdown: true },
+    { name: t('nav.symptomsNav'), href: '/symptoms' },
+    { name: t('nav.blog'), href: '/blog' },
+    { name: t('nav.about'), href: '/about' },
   ];
 
   /* ── Helper: is a pharmacy sub-route active? ────────────────────────────── */
@@ -105,17 +112,17 @@ export default function Header() {
         <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
           <div className="flex items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-2 font-medium tracking-wide">
-              <Phone size={14} className="shrink-0" /> <span>HELPLINE : 9318496221</span>
+              <Phone size={14} className="shrink-0" /> <span>{t('header.helpline')}</span>
             </div>
             <div className="hidden lg:flex items-center gap-2 opacity-90">
-              <Clock size={14} className="shrink-0" /> <span>OPD Timings : 10:00AM - 5:00PM</span>
+              <Clock size={14} className="shrink-0" /> <span>{t('header.opdTimings')}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
             {/* Language Selector */}
             <div className="flex items-center gap-2">
-              <span className="hidden md:inline opacity-80">View in :</span>
+              <span className="hidden md:inline opacity-80">{t('header.viewIn')}</span>
               <div className="flex gap-2 sm:gap-2.5">
                 {languages.map((lang) => (
                   <button
@@ -159,14 +166,14 @@ export default function Header() {
                       </div>
                     </div>
                     <div className="py-1">
-                      <Link to="/health-records" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
-                        <FileText size={16} className="text-gray-400" /> Medical Records
+                      <Link to="/records" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
+                        <FileText size={16} className="text-gray-400" /> {t('header.medicalRecords')}
                       </Link>
                       <Link to="/orders" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
-                        <Package size={16} className="text-gray-400" /> My Orders
+                        <Package size={16} className="text-gray-400" /> {t('header.myOrders')}
                       </Link>
                       <Link to="/profile" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors">
-                        <User size={16} className="text-gray-400" /> My Profile
+                        <User size={16} className="text-gray-400" /> {t('header.myProfile')}
                       </Link>
                     </div>
                     <div className="border-t border-gray-100">
@@ -174,7 +181,7 @@ export default function Header() {
                         onClick={() => { logout(); setIsUserMenuOpen(false); }}
                         className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       >
-                        <LogOut size={16} /> Log Out
+                        <LogOut size={16} /> {t('header.logout')}
                       </button>
                     </div>
                   </div>
@@ -186,14 +193,14 @@ export default function Header() {
                     className="flex items-center gap-2 font-medium hover:text-white transition-colors cursor-pointer bg-white/10 px-3 py-1.5 rounded-lg border border-white/20 shadow-sm"
                   >
                     <User size={14} />
-                    <span className="text-sm">Login / Portal</span>
+                    <span className="text-sm">{t('nav.login')}</span>
                     <ChevronDown size={14} className={`transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {/* ── Login / Portal Dropdown (Not Logged In) ────────────────────────── */}
                   <div className={`absolute top-[150%] right-0 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 text-gray-800 z-50 overflow-hidden transition-all duration-200 origin-top-right ${isUserMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
                     <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Portal</h3>
+                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t('header.selectPortal')}</h3>
                     </div>
                     <div className="py-1">
                       <button
@@ -204,8 +211,8 @@ export default function Header() {
                           <User size={16} />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-bold">Patient Login</span>
-                          <span className="text-[10px] text-gray-500">Book doctors & tests</span>
+                          <span className="font-bold">{t('header.patientLogin')}</span>
+                          <span className="text-[10px] text-gray-500">{t('header.patientLoginDesc')}</span>
                         </div>
                       </button>
 
@@ -222,8 +229,8 @@ export default function Header() {
                           <Briefcase size={16} />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-bold">Partner Login</span>
-                          <span className="text-[10px] text-gray-500">Vendor & Pharmacy portal</span>
+                          <span className="font-bold">{t('header.partnerLogin')}</span>
+                          <span className="text-[10px] text-gray-500">{t('header.partnerLoginDesc')}</span>
                         </div>
                       </Link>
 
@@ -238,8 +245,8 @@ export default function Header() {
                           <Stethoscope size={16} />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-bold">Doctor Login</span>
-                          <span className="text-[10px] text-gray-500">Consultation management</span>
+                          <span className="font-bold">{t('header.doctorLogin')}</span>
+                          <span className="text-[10px] text-gray-500">{t('header.doctorLoginDesc')}</span>
                         </div>
                       </Link>
 
@@ -254,8 +261,8 @@ export default function Header() {
                           <ShieldCheck size={16} />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-bold">Admin Portal</span>
-                          <span className="text-[10px] text-gray-500">System administration</span>
+                          <span className="font-bold">{t('header.adminPortal')}</span>
+                          <span className="text-[10px] text-gray-500">{t('header.adminPortalDesc')}</span>
                         </div>
                       </Link>
                     </div>
@@ -280,10 +287,10 @@ export default function Header() {
             </div>
             <div className="flex flex-col">
               <h1 className="text-lg md:text-2xl lg:text-3xl font-bold text-[#0284c7] leading-tight uppercase tracking-wide">
-                Nabha <span className="text-[#0ea5e9]">Hospital</span>
+                {t('header.hospitalTitle')}
               </h1>
               <span className="text-[7px] md:text-[11px] text-red-600 font-bold tracking-widest uppercase mt-0 md:mt-0.5">
-                & Lifeline Medical Institutions
+                {t('header.hospitalSubtitle')}
               </span>
             </div>
           </Link>
@@ -320,7 +327,7 @@ export default function Header() {
 
             {/* Search */}
             <div className="hidden md:flex relative w-48 lg:w-64">
-              <input type="text" placeholder="Search..." className="w-full pl-3 pr-8 py-1.5 rounded border border-gray-300 focus:outline-none focus:border-[#0F8B8D] text-sm bg-gray-50 focus:bg-white transition-colors" />
+              <input type="text" placeholder={t('header.searchPlaceholder')} className="w-full pl-3 pr-8 py-1.5 rounded border border-gray-300 focus:outline-none focus:border-[#0F8B8D] text-sm bg-gray-50 focus:bg-white transition-colors" />
               <Search size={16} className="absolute right-2.5 top-2 text-gray-400" />
             </div>
 
@@ -333,6 +340,9 @@ export default function Header() {
                 </span>
               )}
             </Link>
+
+            {/* Notification Bell (logged-in customers) */}
+            {user && <NotificationBell />}
 
             {/* Mobile Hamburger */}
             <button className="md:hidden text-[#0284c7] p-1 bg-blue-50 rounded" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -410,10 +420,10 @@ export default function Header() {
 
           <button
             type="button"
-            onClick={() => setAuthModalOpen(true)}
+            onClick={() => setIsConsultationModalOpen(true)}
             className="flex items-center justify-center h-full bg-[#E51C23] hover:bg-[#D3181E] transition-colors text-white px-6 font-bold text-[12px] xl:text-[13px] tracking-wider leading-none uppercase shrink-0 border-l border-red-700"
           >
-            FREE E-CONSULTATION
+            {t('header.freeConsultation')}
           </button>
         </div>
       </nav>
@@ -465,7 +475,7 @@ export default function Header() {
           {/* Search */}
           <div className="p-4 pt-3 pb-2 border-b border-gray-50">
             <div className="relative">
-              <input type="text" placeholder="Search..." className="w-full pl-3 pr-10 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-[#0F8B8D] text-sm bg-gray-50 focus:bg-white" />
+              <input type="text" placeholder={t('header.searchPlaceholder')} className="w-full pl-3 pr-10 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-[#0F8B8D] text-sm bg-gray-50 focus:bg-white" />
               <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
           </div>
@@ -486,16 +496,16 @@ export default function Header() {
                 </div>
                 <div className="flex gap-2 mt-3">
                   <Link to="/orders" onClick={() => setIsMenuOpen(false)} className="flex-1 text-center py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors">
-                    My Orders
+                    {t('header.myOrders')}
                   </Link>
                   <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex-1 text-center py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-bold hover:bg-gray-200 transition-colors">
-                    My Profile
+                    {t('header.myProfile')}
                   </Link>
                 </div>
               </div>
             )}
 
-            <div className="px-5 py-3 pt-4 text-[11px] font-bold text-gray-400 tracking-widest uppercase mb-1">MENU</div>
+            <div className="px-5 py-3 pt-4 text-[11px] font-bold text-gray-400 tracking-widest uppercase mb-1">{t('header.menu')}</div>
             <div className="flex flex-col px-3">
               {mobileNav.map((item) => {
                 /* ── Pharmacy accordion ─────────────────────────── */
@@ -506,7 +516,7 @@ export default function Header() {
                         onClick={() => setIsMobilePharmacyOpen(!isMobilePharmacyOpen)}
                         className={`w-full flex items-center justify-between px-4 py-3 rounded text-[15px] font-medium transition-colors ${isPharmacyActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
-                        <span>Pharmacy</span>
+                        <span>{t('nav.pharmacy')}</span>
                         <ChevronDown size={16} className={`transition-transform duration-200 ${isMobilePharmacyOpen ? 'rotate-180' : ''} ${isPharmacyActive ? 'text-teal-600' : 'text-gray-400'}`} />
                       </button>
 
@@ -551,9 +561,9 @@ export default function Header() {
             <div className="mx-5 my-6 border-t border-gray-100"></div>
 
             {/* Settings Section */}
-            <div className="px-5 text-[11px] font-bold text-gray-400 tracking-widest uppercase mb-4">SETTINGS</div>
+            <div className="px-5 text-[11px] font-bold text-gray-400 tracking-widest uppercase mb-4">{t('header.settings')}</div>
             <div className="px-5 flex items-center justify-between mb-4">
-              <span className="text-[15px] text-gray-700 font-medium">Language</span>
+              <span className="text-[15px] text-gray-700 font-medium">{t('header.language')}</span>
               <div className="flex gap-1.5">
                 {languages.map(lang => (
                   <button key={lang.code} onClick={() => changeLanguage(lang.code)} className={`px-2.5 py-1.5 text-[12px] rounded border transition-colors ${currentLanguage === lang.code ? 'border-teal-300 bg-teal-50 text-teal-700 font-medium' : 'border-gray-200 text-gray-600 bg-white hover:bg-gray-50'}`}>
@@ -570,7 +580,7 @@ export default function Header() {
                   onClick={() => { logout(); setIsMenuOpen(false); }}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 font-medium hover:bg-red-50 transition-colors text-sm"
                 >
-                  <LogOut size={16} /> Log Out
+                  <LogOut size={16} /> {t('header.logout')}
                 </button>
               </div>
             )}
@@ -580,11 +590,12 @@ export default function Header() {
           <div className="p-5 border-t border-gray-100 bg-white shrink-0">
             <button onClick={() => { setAuthModalOpen(true); setIsMenuOpen(false); }} className="w-full bg-[#5A52E5] hover:bg-[#4a42c5] text-white py-3.5 rounded-full font-semibold text-[15px] tracking-wide flex items-center justify-center gap-2 shadow-soft-sm transition-all focus:ring-2 focus:ring-offset-2 focus:ring-[#5A52E5]">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-              Book Appointment
+              {t('header.bookAppointment')}
             </button>
           </div>
         </div>
       </div>
+      <ConsultationModal isOpen={isConsultationModalOpen} onClose={() => setIsConsultationModalOpen(false)} />
     </header>
   );
 }

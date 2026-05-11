@@ -22,6 +22,7 @@ export default function PharmacistLabTests() {
     const [activeTab, setActiveTab] = useState('management'); // 'management' or 'bookings'
     const [bookings, setBookings] = useState([]);
     const [bookingLoading, setBookingLoading] = useState(false);
+    const [bookingFilter, setBookingFilter] = useState('All');
     const [labTests, setLabTests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentTest, setCurrentTest] = useState(null);
@@ -40,13 +41,16 @@ export default function PharmacistLabTests() {
     });
 
     useEffect(() => {
+        let interval;
         if (pharmacistToken) {
             if (activeTab === 'management') {
                 fetchLabTests();
             } else {
                 fetchBookings();
+                interval = setInterval(fetchBookings, 15000);
             }
         }
+        return () => clearInterval(interval);
     }, [pharmacistToken, activeTab]);
 
     const fetchBookings = async () => {
@@ -65,8 +69,7 @@ export default function PharmacistLabTests() {
 
     const fetchLabTests = async () => {
         try {
-            // Lab tests might be shared or pharmacist-specific depending on business model
-            const response = await api.get('/lab-tests/tests', {
+            const response = await api.get('/lab-tests/pharmacist/tests', {
                 headers: { Authorization: `Bearer ${pharmacistToken}` }
             });
             setLabTests(response.data.data);
@@ -120,8 +123,23 @@ export default function PharmacistLabTests() {
         }
     };
 
+    const updateBookingStatus = async (id, newStatus) => {
+        try {
+            await api.put(`/lab-tests/bookings/${id}/status`, { status: newStatus }, {
+                headers: { Authorization: `Bearer ${pharmacistToken}` }
+            });
+            fetchBookings();
+        } catch (err) {
+            console.error("Failed to update status", err);
+        }
+    };
+
     const filteredTests = labTests.filter(t => 
         t.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const filteredBookings = bookings.filter(b => 
+        bookingFilter === 'All' || b.status === bookingFilter.toLowerCase()
     );
 
     return (
@@ -246,10 +264,22 @@ export default function PharmacistLabTests() {
                     </>
                 ) : (
                     <div className="space-y-4">
-                        {bookingLoading ? (
+                        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+                            {['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled'].map(filter => (
+                                <button
+                                    key={filter}
+                                    onClick={() => setBookingFilter(filter)}
+                                    className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${bookingFilter === filter ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    {filter}
+                                </button>
+                            ))}
+                        </div>
+
+                        {bookingLoading && bookings.length === 0 ? (
                             <div className="text-center py-20 text-slate-400 font-medium">Loading bookings...</div>
-                        ) : bookings.length > 0 ? (
-                            bookings.map((booking) => (
+                        ) : filteredBookings.length > 0 ? (
+                            filteredBookings.map((booking) => (
                                 <div key={booking._id} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-100 transition-all">
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner">
@@ -285,12 +315,16 @@ export default function PharmacistLabTests() {
                                     </div>
 
                                     <div className="flex gap-2 shrink-0">
-                                        <button className="p-2.5 bg-slate-800 text-white rounded-xl shadow-lg shadow-slate-800/10 hover:bg-slate-700 transition-all">
-                                            <FiCheckCircle size={18} />
-                                        </button>
-                                        <button className="p-2.5 bg-white border border-slate-100 text-slate-400 rounded-xl hover:bg-slate-50 transition-all">
-                                            <FiChevronRight size={18} />
-                                        </button>
+                                        <select 
+                                            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                            value={booking.status}
+                                            onChange={(e) => updateBookingStatus(booking._id, e.target.value)}
+                                        >
+                                            <option value="pending">Pending</option>
+                                            <option value="confirmed">Confirmed</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        </select>
                                     </div>
                                 </div>
                             ))

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Clock, Phone, MessageCircle, CheckCircle, XCircle, Video, Users, User, Heart } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import AuthSidebar from '../components/Auth/AuthSidebar';
 import SimpleVideoBooking from '../components/VideoCall/SimpleVideoBooking';
@@ -9,7 +9,7 @@ import api from '../services/api';
 
 
 export default function Doctors() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [showVideoBooking, setShowVideoBooking] = useState(false);

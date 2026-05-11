@@ -404,6 +404,45 @@ module.exports = {
   sendInsuranceConfirmation,
 };
 
+// ─── Free E-Consultation Request Email ──────────────────────────────────────────
+
+const sendConsultationRequest = async (details) => {
+  const fromAddress =
+    process.env.SMTP_USER?.trim() ||
+    process.env.RESEND_FROM?.trim() ||
+    "noreply@nabha.com";
+
+  const mailOptions = {
+    from: `"Nabha Healthcare" <${fromAddress}>`,
+    to: process.env.SMTP_USER?.trim() || "support@nabha.com",
+    subject: `🚨 New Free E-Consultation Request: ${details.name}`,
+    html: `
+            <div style="font-family: Arial, sans-serif; padding: 24px; color: #333; max-width: 500px;">
+                <h2 style="color: #E51C23;">New Free E-Consultation Request</h2>
+                <div style="background:#f9fafb; border-left:4px solid #E51C23; padding:16px; border-radius:8px; margin:20px 0;">
+                    <p><strong>Name:</strong> ${details.name}</p>
+                    <p><strong>Mobile:</strong> ${details.mobile}</p>
+                    <p><strong>City:</strong> ${details.city}</p>
+                    <p><strong>Problem:</strong><br/> ${details.problem}</p>
+                    <p style="margin:16px 0 0; color:#6b7280; font-size:0.875rem;">Submitted at: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</p>
+                </div>
+            </div>
+        `,
+  };
+
+  try {
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      await sendViaSMTP(mailOptions);
+      return true;
+    } else {
+      return await sendViaResend(mailOptions);
+    }
+  } catch (error) {
+    console.error("[Consultation] Email error:", error);
+    return false;
+  }
+};
+
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -413,4 +452,234 @@ module.exports = {
   sendVideoConsultationEmail,
   sendCallbackRequest,
   sendInsuranceConfirmation,
+  sendConsultationRequest,
+  sendOrderStatusEmail,
+  sendCodConversionEmail,
+  sendPaymentSuccessEmail,
 };
+
+// ─── Order Status Email ────────────────────────────────────────────────────────
+
+const STATUS_COLORS = {
+  Pending:          { bg: '#FEF3C7', border: '#F59E0B', text: '#92400E', icon: '⏳' },
+  Accepted:         { bg: '#DBEAFE', border: '#3B82F6', text: '#1E3A8A', icon: '✅' },
+  Processing:       { bg: '#DBEAFE', border: '#3B82F6', text: '#1E3A8A', icon: '🔄' },
+  Packed:           { bg: '#EDE9FE', border: '#8B5CF6', text: '#4C1D95', icon: '📦' },
+  'Out for Delivery':{ bg: '#EDE9FE', border: '#8B5CF6', text: '#4C1D95', icon: '🚚' },
+  Delivered:        { bg: '#D1FAE5', border: '#10B981', text: '#064E3B', icon: '✔️' },
+  Cancelled:        { bg: '#FEE2E2', border: '#EF4444', text: '#7F1D1D', icon: '❌' },
+};
+
+const STATUS_MESSAGES = {
+  Pending:           'Your order has been placed and is awaiting confirmation.',
+  Accepted:          'Great news! Your order has been accepted by our pharmacy partner.',
+  Processing:        'Your medicines are being prepared with care.',
+  Packed:            'Your order is packed and ready for dispatch.',
+  'Out for Delivery':'Your order is on its way! Expect delivery soon.',
+  Delivered:         'Your order has been delivered. Thank you for choosing Nabha!',
+  Cancelled:         'Your order has been cancelled. Contact support if this was unexpected.',
+};
+
+async function sendOrderStatusEmail(customer, order, newStatus) {
+  const cfg = STATUS_COLORS[newStatus] || STATUS_COLORS.Pending;
+  const msg = STATUS_MESSAGES[newStatus] || '';
+  const orderId = String(order._id).slice(-8).toUpperCase();
+  const fromAddress = process.env.SMTP_USER?.trim() || process.env.RESEND_FROM?.trim() || 'noreply@nabha.com';
+
+  const itemRows = (order.orderItems || []).map(item =>
+    `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;">${item.name}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;text-align:center;">x${item.qty}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;text-align:right;">₹${item.price * item.qty}</td>
+    </tr>`
+  ).join('');
+
+  const mailOptions = {
+    from: `"Nabha Healthcare" <${fromAddress}>`,
+    to: customer.email,
+    subject: `${cfg.icon} Order #${orderId} — ${newStatus} | Nabha Health Mart`,
+    html: `
+      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:580px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#115E59 0%,#0F766E 100%);padding:32px 28px;text-align:center;">
+          <div style="font-size:40px;margin-bottom:8px;">${cfg.icon}</div>
+          <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">Order ${newStatus}</h1>
+          <p style="color:#99f6e4;margin:8px 0 0;font-size:14px;">Order #${orderId}</p>
+        </div>
+        <!-- Status Banner -->
+        <div style="background:${cfg.bg};border-left:4px solid ${cfg.border};padding:16px 24px;margin:24px;border-radius:8px;">
+          <p style="margin:0;color:${cfg.text};font-weight:600;font-size:15px;">${msg}</p>
+        </div>
+        <!-- Customer Greeting -->
+        <div style="padding:0 28px 16px;">
+          <p style="color:#374151;font-size:15px;">Hello <strong>${customer.name || 'Valued Customer'}</strong>,</p>
+          <p style="color:#6B7280;font-size:14px;line-height:1.6;">Here's a quick summary of your order update from <strong>Nabha Health Mart</strong>.</p>
+        </div>
+        <!-- Order Items -->
+        <div style="margin:0 28px 24px;background:#f8fafc;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f1f5f9;">
+                <th style="padding:10px 12px;text-align:left;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Item</th>
+                <th style="padding:10px 12px;text-align:center;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Qty</th>
+                <th style="padding:10px 12px;text-align:right;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Price</th>
+              </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2" style="padding:12px;font-weight:700;color:#111827;font-size:14px;">Total</td>
+                <td style="padding:12px;font-weight:800;color:#115E59;font-size:16px;text-align:right;">₹${order.totalPrice}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <!-- Payment Info -->
+        <div style="margin:0 28px 28px;display:flex;gap:16px;">
+          <div style="flex:1;background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e2e8f0;">
+            <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;">Payment</p>
+            <p style="margin:0;font-weight:700;color:#1e293b;font-size:14px;">${order.paymentMethod || 'COD'}${order.isPaid ? ' ✓ Paid' : ''}</p>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div style="background:#f8fafc;padding:20px 28px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;color:#94a3b8;font-size:12px;">© 2025 Nabha Healthcare. All rights reserved.</p>
+          <p style="margin:6px 0 0;color:#94a3b8;font-size:12px;">This is an automated notification. Do not reply to this email.</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      await sendViaSMTP(mailOptions);
+    } else {
+      await sendViaResend(mailOptions);
+    }
+    return true;
+  } catch (err) {
+    console.error('[EMAIL] sendOrderStatusEmail error:', err.message);
+    throw err;
+  }
+}
+
+// ─── COD Conversion Suggestion Email ─────────────────────────────────────────
+
+async function sendCodConversionEmail(customer, order, paymentLink) {
+  const orderId = String(order._id).slice(-8).toUpperCase();
+  const fromAddress = process.env.SMTP_USER?.trim() || process.env.RESEND_FROM?.trim() || 'noreply@nabha.com';
+
+  const mailOptions = {
+    from: `"Nabha Healthcare" <${fromAddress}>`,
+    to: customer.email,
+    subject: `💳 Pay Online & Get Priority Dispatch — Order #${orderId}`,
+    html: `
+      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:580px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <div style="background:linear-gradient(135deg,#1D4ED8 0%,#3B82F6 100%);padding:36px 28px;text-align:center;">
+          <div style="font-size:44px;margin-bottom:8px;">💳</div>
+          <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">Complete Payment Online</h1>
+          <p style="color:#BFDBFE;margin:8px 0 0;font-size:14px;">Get faster processing & priority dispatch</p>
+        </div>
+        <div style="padding:28px;">
+          <p style="color:#374151;font-size:15px;">Hello <strong>${customer.name || 'Valued Customer'}</strong>,</p>
+          <p style="color:#6B7280;font-size:14px;line-height:1.7;">
+            You placed Order <strong>#${orderId}</strong> worth <strong>₹${order.totalPrice}</strong> with Cash on Delivery.
+            To avoid delivery delays and ensure <strong>faster processing</strong>, you can securely complete your payment online before dispatch.
+          </p>
+          <!-- Benefits -->
+          <div style="background:#EFF6FF;border-radius:12px;padding:20px;margin:20px 0;">
+            <h3 style="margin:0 0 14px;color:#1E3A8A;font-size:14px;text-transform:uppercase;letter-spacing:.5px;">Why Pay Online?</h3>
+            <div style="display:grid;gap:10px;">
+              ${['⚡ Faster order processing & dispatch', '📦 Priority queue over COD orders', '🤝 100% contactless delivery experience', '🔒 Secure, encrypted payment gateway', '✅ Instant confirmation & digital receipt'].map(b => `<div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#1e40af;">${b}</div>`).join('')}
+            </div>
+          </div>
+          <!-- Order Summary -->
+          <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:24px;border:1px solid #e2e8f0;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="color:#64748b;font-size:13px;">Order ID</span>
+              <span style="font-weight:700;color:#0f172a;font-size:13px;">#${orderId}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="color:#64748b;font-size:13px;">Amount Due</span>
+              <span style="font-weight:800;color:#1D4ED8;font-size:16px;">₹${order.totalPrice}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:#64748b;font-size:13px;">Estimated Delivery ETA</span>
+              <span style="font-weight:600;color:#0f172a;font-size:13px;">1–3 Business Days</span>
+            </div>
+          </div>
+          <!-- CTA Button -->
+          ${paymentLink && paymentLink !== '#' ? `
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${paymentLink}" style="display:inline-block;background:linear-gradient(135deg,#1D4ED8,#3B82F6);color:#ffffff;font-weight:700;font-size:16px;padding:16px 40px;border-radius:12px;text-decoration:none;box-shadow:0 4px 14px rgba(29,78,216,0.4);letter-spacing:.3px;">
+              🔐 Pay Securely Now — ₹${order.totalPrice}
+            </a>
+            <p style="margin:12px 0 0;color:#94a3b8;font-size:12px;">This link is valid for 24 hours. Secure payment powered by Razorpay.</p>
+          </div>
+          ` : `<div style="background:#fef9c3;border-radius:10px;padding:16px;text-align:center;margin:20px 0;"><p style="margin:0;color:#92400e;font-size:14px;">Login to your dashboard to pay online for this order.</p></div>`}
+        </div>
+        <div style="background:#f8fafc;padding:20px 28px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;color:#94a3b8;font-size:12px;">© 2025 Nabha Healthcare · Secure Payments by Razorpay</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      await sendViaSMTP(mailOptions);
+    } else {
+      await sendViaResend(mailOptions);
+    }
+    return true;
+  } catch (err) {
+    console.error('[EMAIL] sendCodConversionEmail error:', err.message);
+    throw err;
+  }
+}
+
+// ─── Payment Success Email ────────────────────────────────────────────────────
+
+async function sendPaymentSuccessEmail(customer, order) {
+  const orderId = String(order._id).slice(-8).toUpperCase();
+  const fromAddress = process.env.SMTP_USER?.trim() || process.env.RESEND_FROM?.trim() || 'noreply@nabha.com';
+
+  const mailOptions = {
+    from: `"Nabha Healthcare" <${fromAddress}>`,
+    to: customer.email,
+    subject: `✅ Payment Confirmed — Order #${orderId} | Nabha Health Mart`,
+    html: `
+      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:580px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
+        <div style="background:linear-gradient(135deg,#059669 0%,#10B981 100%);padding:36px 28px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:8px;">✅</div>
+          <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">Payment Successful!</h1>
+          <p style="color:#A7F3D0;margin:8px 0 0;font-size:14px;">Your order is now prioritized for dispatch</p>
+        </div>
+        <div style="padding:28px;">
+          <p style="color:#374151;font-size:15px;">Hello <strong>${customer.name || 'Valued Customer'}</strong>,</p>
+          <p style="color:#6B7280;font-size:14px;line-height:1.7;">We've received your payment of <strong>₹${order.totalPrice}</strong> for Order <strong>#${orderId}</strong>. Your order has been moved to <strong>priority dispatch</strong>.</p>
+          <div style="background:#D1FAE5;border-radius:12px;padding:20px;margin:20px 0;text-align:center;">
+            <p style="margin:0;font-size:24px;font-weight:800;color:#065F46;">₹${order.totalPrice}</p>
+            <p style="margin:6px 0 0;font-size:13px;color:#047857;">Payment Confirmed · ${new Date().toLocaleDateString('en-IN')}</p>
+          </div>
+        </div>
+        <div style="background:#f8fafc;padding:20px 28px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;color:#94a3b8;font-size:12px;">© 2025 Nabha Healthcare. Thank you for your trust.</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      await sendViaSMTP(mailOptions);
+    } else {
+      await sendViaResend(mailOptions);
+    }
+    return true;
+  } catch (err) {
+    console.error('[EMAIL] sendPaymentSuccessEmail error:', err.message);
+    throw err;
+  }
+}
+

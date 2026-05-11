@@ -3,8 +3,16 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
+// We import socket connect/disconnect lazily to avoid circular deps
+let _socketConnect = null;
+let _socketDisconnect = null;
+export const registerSocketHandlers = (connectFn, disconnectFn) => {
+    _socketConnect = connectFn;
+    _socketDisconnect = disconnectFn;
+};
+
 export const AuthProvider = ({ children }) => {
-    // ── Patient Auth (Original) ───────────────────────────────────────────
+    // ── Patient Auth ───────────────────────────────────────────────────────────
     const [user, setUser] = useState(() => {
         try {
             const stored = localStorage.getItem('user');
@@ -21,7 +29,7 @@ export const AuthProvider = ({ children }) => {
     });
     const [pharmacistToken, setPharmacistToken] = useState(() => localStorage.getItem('nabha_pharmacist_token') || null);
 
-    // ── Admin Auth (Added) ───────────────────────────────────────────────
+    // ── Admin Auth ─────────────────────────────────────────────────────────────
     const [admin, setAdmin] = useState(() => {
         try {
             const stored = localStorage.getItem('nabha_admin');
@@ -30,17 +38,37 @@ export const AuthProvider = ({ children }) => {
     });
     const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken') || null);
 
+    // ── Doctor Auth ────────────────────────────────────────────────────────────
+    const [doctor, setDoctor] = useState(() => {
+        try {
+            const stored = localStorage.getItem('nabha_doctor');
+            return stored ? JSON.parse(stored) : null;
+        } catch { return null; }
+    });
+    const [doctorToken, setDoctorToken] = useState(() => localStorage.getItem('doctorToken') || null);
+
     const [isAuthModalOpen, setAuthModalOpen] = useState(false);
 
-    // Sync axios headers (prioritize patient for general sites)
+    // Sync axios headers
     useEffect(() => {
-        const activeToken = token; // Use patient token by default for general API
+        const activeToken = token || doctorToken || pharmacistToken || adminToken;
         if (activeToken) {
             axios.defaults.headers.common['Authorization'] = `Bearer ${activeToken}`;
-        } else if (!pharmacistToken) {
+        } else {
             delete axios.defaults.headers.common['Authorization'];
         }
-    }, [token, pharmacistToken]);
+    }, [token, doctorToken, pharmacistToken, adminToken]);
+
+    // ── Socket connection: auto-join on login ──────────────────────────────────
+    useEffect(() => {
+        if (!_socketConnect) return;
+        const userId = user?._id || user?.id;
+        const pharmacistId = pharmacist?._id;
+        const adminId = admin?._id;
+        if (userId || pharmacistId || adminId) {
+            _socketConnect({ userId, pharmacistId, adminId });
+        }
+    }, [user, pharmacist, admin]);
 
     const login = (userData, jwtToken) => {
         setUser(userData);
@@ -55,6 +83,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         setAuthModalOpen(false);
+        if (_socketDisconnect) _socketDisconnect();
     };
 
     const loginPharmacist = (data, jwt) => {
@@ -85,11 +114,26 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('adminToken');
     };
 
+    const loginDoctor = (data, jwt) => {
+        setDoctor(data);
+        setDoctorToken(jwt);
+        localStorage.setItem('nabha_doctor', JSON.stringify(data));
+        localStorage.setItem('doctorToken', jwt);
+    };
+
+    const logoutDoctor = () => {
+        setDoctor(null);
+        setDoctorToken(null);
+        localStorage.removeItem('nabha_doctor');
+        localStorage.removeItem('doctorToken');
+    };
+
     return (
         <AuthContext.Provider value={{ 
             user, token, login, logout, 
             pharmacist, pharmacistToken, loginPharmacist, logoutPharmacist,
             admin, adminToken, loginAdmin, logoutAdmin,
+            doctor, doctorToken, loginDoctor, logoutDoctor,
             isAuthModalOpen, setAuthModalOpen 
         }}>
             {children}

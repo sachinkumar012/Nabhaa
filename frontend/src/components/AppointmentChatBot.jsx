@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Mic, MicOff, Send, Volume2, VolumeX, Calendar, X, MessageCircle, CheckCircle } from "lucide-react";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY; // Gemini API Key
@@ -218,8 +219,10 @@ const BookingForm = ({ onSubmit, onCancel }) => {
 };
 
 const AppointmentChatBot = () => {
+  const { i18n } = useTranslation();
+  const rawLang = i18n.language || 'en';
+  const currentLanguage = LANGUAGES[rawLang.split('-')[0]] ? rawLang.split('-')[0] : 'en';
   const [isOpen, setIsOpen] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);

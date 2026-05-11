@@ -1,12 +1,9 @@
-# Dependencies
+# ─── Dependencies ────────────────────────────────────────────────────────────
 node_modules/
 .pnp
 .pnp.js
-pnpm-lock.yaml
-yarn.lock
-package-lock.json
 
-# Environment variables
+# ─── Environment Variables ────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
@@ -15,25 +12,61 @@ package-lock.json
 .env.test.local
 .env.production.local
 
-# Build outputs
+# ─── Build Outputs ────────────────────────────────────────────────────────────
 dist/
 dist-ssr/
 build/
 out/
 .render-build/
-*.gemini/
 
-# Logs
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-logs
-*.log
+gemini_debug.log
+build.log
 err.log
 
-# IDEs and Editors
+# ─── Debug & Scratch Files ────────────────────────────────────────────────────
+debug_output*.txt
+*.tmp
+*.temp
+scratch/
+fetch_test.js
+
+# ─── Backend Test & One-off Scripts ──────────────────────────────────────────
+backend/read_otp.js
+backend/verify_otp_endpoint.js
+backend/test_*.js
+backend/test-*.js
+backend/debug_*.js
+backend/debug_save.js
+backend/upload_avatar.js
+backend/avatar_url.txt
+backend/seed_admin.js
+backend/test-did.js
+backend/test-symptom.js
+backend/test-structured-parser.js
+backend/test_jit_1.js
+
+# ─── Tesseract OCR – large language data files (auto-downloaded at runtime) ──
+*.traineddata
+
+# ─── Uploaded / Generated Media ──────────────────────────────────────────────
+uploads/
+backend/uploads/
+frontend/public/uploads/
+
+# ─── Lock Files ──────────────────────────────────────────────────────────────
+# package-lock.json is intentionally committed for reproducible installs.
+pnpm-lock.yaml
+yarn.lock
+
+# ─── IDEs & Editors ──────────────────────────────────────────────────────────
 .vscode/
 !.vscode/extensions.json
 .idea/
@@ -43,31 +76,18 @@ err.log
 *.sln
 *.swp
 *.swo
+
+# ─── OS Artefacts ────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Testing
+# ─── Vite Cache ──────────────────────────────────────────────────────────────
+.vite/
+
+# ─── Testing Coverage ────────────────────────────────────────────────────────
 coverage/
 .nyc_output/
 
-# Vite
-.vite/
-
-# Backend specific
-backend/read_otp.js
-backend/verify_otp_endpoint.js
-backend/test_*.js
-backend/avatar_url.txt
-*.tmp
-*.temp
-
-# Tesseract OCR language files (auto-downloaded)
-*.traineddata
-
-# Uploaded Files
-uploads/
-backend/uploads/
-frontend/public/uploads/
-admin/dist/
-frontend/dist/
-backend/dist/
+# ─── Gemini / Antigravity Tool ───────────────────────────────────────────────
+.gemini/

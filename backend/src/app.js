@@ -6,9 +6,21 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-// Simple permissive CORS for quick debugging
+// CORS — allow all in dev, use allowlist from env in production
+const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',')
+    : ['http://localhost:5173', 'http://localhost:5174'];
+
 app.use(cors({
-    origin: '*',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g., mobile apps, curl, Render health checks)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error(`CORS: origin '${origin}' not allowed`));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -27,6 +39,7 @@ app.use(helmet({
     // Allow images to be displayed from external sources (needed for prescription preview)
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
 }));
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
@@ -40,9 +53,9 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Routes
+// Health check
 app.get('/', (req, res) => {
-    res.send('Nabha Healthcare API is running... (v2 - Debug Mode)');
+    res.json({ status: 'ok', service: 'Nabha Healthcare API', env: process.env.NODE_ENV });
 });
 
 const doctorRoutes = require('./routes/doctorRoutes');
@@ -69,6 +82,9 @@ app.use('/api/lab-tests', require('./routes/labRoutes'));
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/pharmacist', pharmacistRoutes);
 app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/records', require('./routes/healthRecordRoutes'));
+app.use('/api/public', require('./routes/publicRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

@@ -14,7 +14,7 @@ const labBookingSchema = new mongoose.Schema({
     pharmacist: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Pharmacist',
-        required: true
+        required: false
     },
     patientDetails: {
         name: { type: String, required: true },

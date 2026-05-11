@@ -1,0 +1,128 @@
+{
+  "nav": {
+    "home": "मुख्य पृष्ठ",
+    "doctors": "डॉक्टर",
+    "records": "स्वास्थ्य रिकॉर्ड",
+    "pharmacy": "फार्मेसी",
+    "symptomsNav": "लक्षण जांचकर्ता",
+    "about": "हमारे बारे में",
+    "labTests": "लैब टेस्ट",
+    "abha": "आभा (ABHA)",
+    "insurance": "बीमा",
+    "blog": "स्वास्थ्य ब्लॉग",
+    "login": "लॉग इन / रजिस्टर",
+    "cart": "कार्ट",
+    "hospitals": "अस्पताल",
+    "aiAnalyzer": "एआई एनालाइज़र"
+  },
+  "header": {
+    "helpline": "हेल्पलाइन : 9318496221",
+    "opdTimings": "ओपीडी समय : 10:00AM - 5:00PM",
+    "viewIn": "इसमें देखें :",
+    "hospitalTitle": "नाभा अस्पताल",
+    "hospitalSubtitle": "और लाइफलाइन मेडिकल संस्थान",
+    "searchPlaceholder": "खोजें...",
+    "freeConsultation": "मुफ्त ई-परामर्श",
+    "patientLogin": "मरीज़ लॉगिन",
+    "patientLoginDesc": "डॉक्टर और टेस्ट बुक करें",
+    "partnerLogin": "पार्टनर लॉगिन",
+    "partnerLoginDesc": "विक्रेता और फ़ार्मेसी पोर्टल",
+    "doctorLogin": "डॉक्टर लॉगिन",
+    "doctorLoginDesc": "परामर्श प्रबंधन",
+    "adminPortal": "व्यवस्थापक पोर्टल",
+    "adminPortalDesc": "सिस्टम प्रशासन",
+    "logout": "लॉग आउट",
+    "myOrders": "मेरे ऑर्डर",
+    "myProfile": "मेरी प्रोफ़ाइल",
+    "medicalRecords": "मेडिकल रिकॉर्ड्स",
+    "selectPortal": "पोर्टल चुनें",
+    "bookAppointment": "अपॉइंटमेंट बुक करें",
+    "settings": "सेटिंग्स",
+    "language": "भाषा",
+    "menu": "मेनू"
+  },
+  "home": {
+    "welcome": "नाभा हेल्थकेयर में आपका स्वागत है",
+    "subtitle": "ग्रामीण समुदायों के लिए गुणवत्तापूर्ण स्वास्थ्य सेवा",
+    "description": "घर के आराम से डॉक्टरों से मिलें, स्वास्थ्य रिकॉर्ड प्रबंधित करें, और चिकित्सा मार्गदर्शन प्राप्त करें।",
+    "getStarted": "शुरू करें",
+    "features": {
+      "aiSymptom": "AI लक्षण जांचकर्ता",
+      "telemedicine": "टेलीमेडिसिन",
+      "pharmacy": "ई-फार्मेसी",
+      "abha": "आभा एकीकरण"
+    }
+  },
+  "doctors": {
+    "title": "हमारे डॉक्टर",
+    "availability": "अभी उपलब्ध",
+    "unavailable": "व्यस्त",
+    "consultNow": "अभी परामर्श लें",
+    "experience": "वर्षों का अनुभव",
+    "specialty": "विशेषज्ञता",
+    "location": "स्थान",
+    "searchPlaceholder": "नाम या विशेषज्ञता से डॉक्टर खोजें..."
+  },
+  "records": {
+    "title": "स्वास्थ्य रिकॉर्ड",
+    "addRecord": "नया रिकॉर्ड जोड़ें",
+    "patientName": "मरीज़ का नाम",
+    "symptoms": "लक्षण",
+    "diagnosis": "निदान",
+    "prescription": "दवा",
+    "date": "दिनांक",
+    "save": "रिकॉर्ड सेव करें"
+  },
+  "pharmacy": {
+    "title": "फार्मेसी",
+    "medicineAvailability": "दवा की उपलब्धता",
+    "searchMedicine": "दवा खोजें...",
+    "available": "उपलब्ध",
+    "outOfStock": "स्टॉक में नहीं",
+    "addToCart": "कार्ट में डालें",
+    "buyNow": "अभी खरीदें",
+    "price": "कीमत",
+    "description": "विवरण"
+  },
+  "symptoms": {
+    "title": "AI लक्षण जांचकर्ता",
+    "placeholder": "अपने लक्षण बताएं...",
+    "check": "लक्षण जांचें",
+    "listening": "सुन रही हूँ...",
+    "thinking": "नाभा सोच रही है...",
+    "speaking": "बोल रही हूँ...",
+    "disclaimer": "⚠️ यह चिकित्सा निदान नहीं है। हमेशा डॉक्टर से सलाह लें।",
+    "startVoice": "वॉइस परामर्श शुरू करें",
+    "endVoice": "वॉइस चैट समाप्त करें",
+    "quickSymptoms": "त्वरित लक्षण",
+    "online": "ऑनलाइन"
+  },
+  "about": {
+    "title": "नाभा हेल्थकेयर के बारे में",
+    "mission": "हमारा मिशन",
+    "missionText": "प्रौद्योगिकी के माध्यम से ग्रामीण समुदायों को सुलभ, गुणवत्तापूर्ण स्वास्थ्य सेवाएं प्रदान करना।"
+  },
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "close": "बंद करें",
+    "cancel": "रद्द करें",
+    "language": "भाषा",
+    "save": "सहेजें",
+    "submit": "जमा करें",
+    "error": "एक त्रुटि हुई। कृपया पुनः प्रयास करें।",
+    "success": "सफलता!"
+  },
+  "auth": {
+    "welcomeBack": "वापसी पर स्वागत है",
+    "createAccount": "खाता बनाएं",
+    "email": "ईमेल पता",
+    "password": "पासवर्ड",
+    "name": "पूरा नाम",
+    "phone": "फ़ोन नंबर",
+    "login": "लॉग इन",
+    "register": "रजिस्टर",
+    "forgotPassword": "पासवर्ड भूल गए?",
+    "dontHaveAccount": "क्या आपके पास खाता नहीं है?",
+    "alreadyHaveAccount": "क्या आपके पास पहले से खाता है?"
+  }
+}

@@ -6,6 +6,7 @@ import {
 import LabTestDetailsView from '../components/Pharmacy/LabTestDetailsView';
 import MyLabBookingsView from '../components/Pharmacy/MyLabBookingsView';
 import LabBookingModal from '../components/Pharmacy/LabBookingModal';
+import { useAuth } from '../context/AuthContext';
 
 // ─── Brand color ─────────────────────────────────────────────────────────────
 const TEAL = '#0F8B8D';
@@ -409,7 +410,8 @@ const FAQItem = ({ q, a, open, onToggle }) => (
 );
 
 // ─── Main LabTests Component ──────────────────────────────────────────────────
-const LabTests = ({ user }) => {
+const LabTests = () => {
+  const { user } = useAuth();
   const [view, setView] = useState('list');   // 'list' | 'details' | 'my-bookings' | 'view-all-top'
   const [activeFaq, setActiveFaq] = useState(null);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -484,7 +486,10 @@ const LabTests = ({ user }) => {
 
   // ── Render branches ───────────────────────────────────────────────────────
   if (view === 'details' && selectedDetailTest) return (
-    <LabTestDetailsView test={selectedDetailTest} onBack={() => setView('list')} onBook={setBookingTest} onSuggestionClick={handleViewDetails} />
+    <>
+      <LabTestDetailsView test={selectedDetailTest} onBack={() => setView('list')} onBook={setBookingTest} onSuggestionClick={handleViewDetails} />
+      {bookingTest && <LabBookingModal test={bookingTest} user={user} onClose={() => setBookingTest(null)} onSubmit={handleBookingSubmit} />}
+    </>
   );
   if (view === 'my-bookings') return <MyLabBookingsView user={user} onBack={() => setView('list')} />;
 

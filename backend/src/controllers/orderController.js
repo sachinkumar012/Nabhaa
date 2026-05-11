@@ -1,6 +1,7 @@
 const Order = require('../models/orderModel');
-
 const Pharmacist = require('../models/Pharmacist');
+const Customer = require('../models/customerModel');
+const { emitOrderUpdate, sendStatusEmailWithRetry, sendCodEmailWithRetry } = require('../utils/notificationService');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -57,17 +58,44 @@ const addOrderItems = async (req, res) => {
 
         const createdOrder = await order.save();
 
-        // SOCKET.IO REAL-TIME NOTIFICATION
+        // Add initial status history
+        createdOrder.statusHistory = [{ status: 'Pending', timestamp: new Date(), note: 'Order placed' }];
+        await createdOrder.save();
+
+        // SOCKET.IO + EMAIL NOTIFICATIONS
         const io = req.app.get('io');
-        if (io && pharmacistId) {
-            // Populate user info for the notification
-            const populatedOrder = await Order.findById(createdOrder._id).populate('user', 'name phone');
-            io.to(`pharmacist_${pharmacistId}`).emit('new_order', {
-                order: populatedOrder,
-                message: 'New order received!'
-            });
-            // Also notify admins if needed
-            io.emit('admin_new_order', { order: populatedOrder });
+        try {
+            const populatedOrder = await Order.findById(createdOrder._id).populate('user', 'name email phone');
+
+            // Emit to pharmacist + admin
+            emitOrderUpdate(io, populatedOrder, 'new_order', { message: 'New order received!' });
+
+            // Send order placed email to customer
+            if (populatedOrder.user?.email) {
+                sendStatusEmailWithRetry(
+                    { name: populatedOrder.user.name, email: populatedOrder.user.email },
+                    populatedOrder,
+                    'Pending'
+                );
+            }
+
+            // If COD, send conversion email (fire-and-forget, no await)
+            if ((order.paymentMethod === 'COD' || order.paymentMethod === 'Cash on Delivery') && populatedOrder.user?.email) {
+                // Emit COD reminder to customer's socket room
+                if (io) io.to(`user_${populatedOrder.user._id}`).emit('cod_reminder', {
+                    orderId: createdOrder._id,
+                    totalPrice: order.totalPrice,
+                    message: 'Pay online for faster delivery!'
+                });
+                // Send COD email (no payment link at creation time)
+                sendCodEmailWithRetry(
+                    { name: populatedOrder.user.name, email: populatedOrder.user.email },
+                    populatedOrder,
+                    '' // link generated later via /payments/create-razorpay-link
+                );
+            }
+        } catch (notifErr) {
+            console.error('Notification error (non-fatal):', notifErr.message);
         }
 
         res.status(201).json(createdOrder);
@@ -212,21 +240,30 @@ const updateOrderStatus = async (req, res) => {
             order.deliveredAt = Date.now();
         }
 
+        // Append to status history
+        order.statusHistory = order.statusHistory || [];
+        order.statusHistory.push({ status, timestamp: new Date() });
+
         const updatedOrder = await order.save();
 
-        // SOCKET.IO REAL-TIME NOTIFICATION
+        // SOCKET.IO + EMAIL NOTIFICATIONS
         const io = req.app.get('io');
-        if (io && order.pharmacist) {
-            io.to(`pharmacist_${order.pharmacist}`).emit('order_status_updated', {
-                orderId: order._id,
-                status: status,
-                message: `Order #${order._id.toString().slice(-6).toUpperCase()} updated to ${status}`
+        try {
+            const populatedOrder = await Order.findById(updatedOrder._id).populate('user', 'name email phone');
+            emitOrderUpdate(io, populatedOrder, 'order_update', {
+                message: `Order #${String(order._id).slice(-6).toUpperCase()} updated to ${status}`
             });
-            // Notify user too if they have a room
-            io.to(`user_${order.user}`).emit('order_update', {
-                orderId: order._id,
-                status: status
-            });
+
+            // Send status email to customer
+            if (populatedOrder.user?.email) {
+                sendStatusEmailWithRetry(
+                    { name: populatedOrder.user.name, email: populatedOrder.user.email },
+                    populatedOrder,
+                    status
+                );
+            }
+        } catch (notifErr) {
+            console.error('Status notification error (non-fatal):', notifErr.message);
         }
 
         res.json(updatedOrder);

@@ -11,10 +11,15 @@ const socketIo = require('socket.io');
 connectDB();
 
 const server = http.createServer(app);
+const socketOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',')
+    : ['http://localhost:5173', 'http://localhost:5174'];
+
 const io = socketIo(server, {
     cors: {
-        origin: "*", // Allow all origins for now
-        methods: ["GET", "POST"]
+        origin: socketOrigins,
+        methods: ['GET', 'POST'],
+        credentials: true
     }
 });
 
@@ -33,6 +38,18 @@ io.on('connection', (socket) => {
     socket.on('join_pharmacist_room', (pharmacistId) => {
         socket.join(`pharmacist_${pharmacistId}`);
         console.log(`Socket ${socket.id} joined pharmacist room: pharmacist_${pharmacistId}`);
+    });
+
+    // Customer order tracking room
+    socket.on('join_user_room', (userId) => {
+        socket.join(`user_${userId}`);
+        console.log(`Socket ${socket.id} joined user room: user_${userId}`);
+    });
+
+    // Admin monitoring room
+    socket.on('join_admin_room', () => {
+        socket.join('admin_room');
+        console.log(`Socket ${socket.id} joined admin room`);
     });
 
     socket.on('call_doctor', (data) => {

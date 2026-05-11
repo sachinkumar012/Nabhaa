@@ -3,19 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api'; // Assuming you have a centralized api service, or I should import axios directly if not
 // Checking folder structure... src/services exists.
 import { toast } from 'react-toastify';
+import { useAuth } from '../../context/AuthContext';
 
 const DoctorLogin = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
+    const { loginDoctor } = useAuth();
 
     const submitHandler = async (e) => {
         e.preventDefault();
         try {
             // Need to ensure the backend route matches. /api/doctors/login
             const { data } = await api.post('/doctors/login', { email, password });
-            localStorage.setItem('doctorToken', data.token);
-            localStorage.setItem('doctorInfo', JSON.stringify(data));
+            
+            // Use AuthContext for centralized session management
+            loginDoctor(data, data.token);
+            
             toast.success('Login Successful');
             navigate('/doctor/dashboard');
         } catch (error) {

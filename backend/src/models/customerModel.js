@@ -38,6 +38,15 @@ const customerSchema = new mongoose.Schema({
         enum: ['active', 'blocked'],
         default: 'active'
     },
+    avatar: {
+        type: String,
+        default: ''
+    },
+    provider: {
+        type: String,
+        enum: ['otp', 'google'],
+        default: 'otp'
+    },
     createdAt: {
         type: Date,
         default: Date.now

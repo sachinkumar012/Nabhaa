@@ -1,0 +1,128 @@
+{
+  "nav": {
+    "home": "Home",
+    "doctors": "Doctors",
+    "records": "Health Records",
+    "pharmacy": "Pharmacy",
+    "symptomsNav": "Symptom Checker",
+    "about": "About",
+    "labTests": "Lab Tests",
+    "abha": "ABHA",
+    "insurance": "Insurance",
+    "blog": "Health Blog",
+    "login": "Login / Register",
+    "cart": "Cart",
+    "hospitals": "Hospitals",
+    "aiAnalyzer": "AI Analyzer"
+  },
+  "header": {
+    "helpline": "HELPLINE : 9318496221",
+    "opdTimings": "OPD Timings : 10:00AM - 5:00PM",
+    "viewIn": "View in :",
+    "hospitalTitle": "Nabha Hospital",
+    "hospitalSubtitle": "& Lifeline Medical Institutions",
+    "searchPlaceholder": "Search...",
+    "freeConsultation": "FREE E-CONSULTATION",
+    "patientLogin": "Patient Login",
+    "patientLoginDesc": "Book doctors & tests",
+    "partnerLogin": "Partner Login",
+    "partnerLoginDesc": "Vendor & Pharmacy portal",
+    "doctorLogin": "Doctor Login",
+    "doctorLoginDesc": "Consultation management",
+    "adminPortal": "Admin Portal",
+    "adminPortalDesc": "System administration",
+    "logout": "Log Out",
+    "myOrders": "My Orders",
+    "myProfile": "My Profile",
+    "medicalRecords": "Medical Records",
+    "selectPortal": "Select Portal",
+    "bookAppointment": "Book Appointment",
+    "settings": "SETTINGS",
+    "language": "Language",
+    "menu": "MENU"
+  },
+  "home": {
+    "welcome": "Welcome to Nabha Healthcare",
+    "subtitle": "Quality Healthcare for Rural Communities",
+    "description": "Access doctors, manage health records, and get medical guidance from the comfort of your home.",
+    "getStarted": "Get Started",
+    "features": {
+      "aiSymptom": "AI Symptom Checker",
+      "telemedicine": "Telemedicine",
+      "pharmacy": "E-Pharmacy",
+      "abha": "ABHA Integration"
+    }
+  },
+  "doctors": {
+    "title": "Our Doctors",
+    "availability": "Available Now",
+    "unavailable": "Currently Busy",
+    "consultNow": "Consult Now",
+    "experience": "years experience",
+    "specialty": "Specialty",
+    "location": "Location",
+    "searchPlaceholder": "Search doctors by name or specialty..."
+  },
+  "records": {
+    "title": "Health Records",
+    "addRecord": "Add New Record",
+    "patientName": "Patient Name",
+    "symptoms": "Symptoms",
+    "diagnosis": "Diagnosis",
+    "prescription": "Prescription",
+    "date": "Date",
+    "save": "Save Record"
+  },
+  "pharmacy": {
+    "title": "Pharmacy",
+    "medicineAvailability": "Medicine Availability",
+    "searchMedicine": "Search medicine...",
+    "available": "Available",
+    "outOfStock": "Out of Stock",
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "price": "Price",
+    "description": "Description"
+  },
+  "symptoms": {
+    "title": "AI Symptom Checker",
+    "placeholder": "Describe your symptoms...",
+    "check": "Check Symptoms",
+    "listening": "Listening...",
+    "thinking": "Nabha is thinking...",
+    "speaking": "Speaking...",
+    "disclaimer": "⚠️ Not a medical diagnosis. Always consult a doctor.",
+    "startVoice": "Start Voice Consultation",
+    "endVoice": "End Voice Chat",
+    "quickSymptoms": "Quick Symptoms",
+    "online": "Online"
+  },
+  "about": {
+    "title": "About Nabha Healthcare",
+    "mission": "Our Mission",
+    "missionText": "To provide accessible, quality healthcare services to rural communities through technology."
+  },
+  "common": {
+    "loading": "Loading...",
+    "close": "Close",
+    "cancel": "Cancel",
+    "language": "Language",
+    "save": "Save",
+    "submit": "Submit",
+    "error": "An error occurred. Please try again.",
+    "success": "Success!"
+  },
+  "auth": {
+    "welcomeBack": "Welcome Back",
+    "createAccount": "Create Account",
+    "email": "Email Address",
+    "password": "Password",
+    "name": "Full Name",
+    "phone": "Phone Number",
+    "login": "Login",
+    "register": "Register",
+    "forgotPassword": "Forgot Password?",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?"
+  }
+}

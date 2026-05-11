@@ -11,8 +11,7 @@ import { useCart } from '../context/CartContext';
 
 const API_BASE = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/prescriptions`;
 
-// ─── Confidence Badge ────────────────────────────────────────────────────────
-const ConfidenceBadge = ({ score, matchType }) => {
+ const ConfidenceBadge = ({ score, matchType }) => {
   const pct = Math.round((score || 0) * 100);
   const color = pct >= 85 ? 'badge-confidence-high' : pct >= 65 ? 'badge-confidence-mid' : 'badge-confidence-low';
   const label = matchType === 'exact' ? 'Exact Match'
@@ -23,7 +22,6 @@ const ConfidenceBadge = ({ score, matchType }) => {
   return <span className={`rx-confidence-badge ${color}`}>{label} · {pct}%</span>;
 };
 
-// ─── OCR Progress Steps ─────────────────────────────────────────────────────
 const OcrProgressStep = ({ step, currentStep, label }) => {
   const done = currentStep > step;
   const active = currentStep === step;
@@ -37,7 +35,6 @@ const OcrProgressStep = ({ step, currentStep, label }) => {
   );
 };
 
-// ─── Manual Search Autocomplete ─────────────────────────────────────────────
 const ManualSearch = ({ placeholder, onSelect }) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);

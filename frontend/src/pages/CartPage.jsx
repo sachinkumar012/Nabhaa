@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const getMedIcon = (type = '') => {
   const t = type.toLowerCase();
@@ -23,9 +24,47 @@ const CartPage = () => {
   const { user, setAuthModalOpen } = useAuth();
   const navigate = useNavigate();
   const [removingId, setRemovingId] = useState(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount }
+  const [couponError, setCouponError] = useState('');
 
   const deliveryCharge = cartTotal >= 299 ? 0 : (cart.length > 0 ? 50 : 0);
-  const finalTotal = cartTotal + deliveryCharge;
+  const discount = appliedCoupon ? appliedCoupon.discount : 0;
+  const finalTotal = Math.max(0, cartTotal + deliveryCharge - discount);
+
+  const handleApplyCoupon = (codeToApply) => {
+    const code = (codeToApply || couponCode).toUpperCase().trim();
+    setCouponError('');
+
+    if (!code) {
+      const msg = 'Please enter a coupon code';
+      setCouponError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (code === 'FIRST100') {
+      if (cartTotal <= 299) {
+        const msg = 'Order above ₹299 to use this coupon';
+        setCouponError(msg);
+        toast.warning(msg);
+        return;
+      }
+      setAppliedCoupon({ code: 'FIRST100', discount: 100 });
+      setCouponCode('');
+      setCouponError('');
+      toast.success('Coupon applied successfully!');
+    } else {
+      const msg = 'Invalid coupon code';
+      setCouponError(msg);
+      toast.error(msg);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    toast.info('Coupon removed');
+  };
 
   const handleRemove = async (productId) => {
     setRemovingId(productId);
@@ -235,14 +274,71 @@ const CartPage = () => {
             <div className="w-full lg:w-[380px] shrink-0 sticky top-24 space-y-6">
               
               {/* Coupon Card */}
-              <div className="bg-teal-50/50 border border-teal-100 rounded-2xl p-4 flex items-start gap-3 transition-colors hover:bg-teal-50">
-                 <div className="bg-white p-2 rounded-lg text-teal-600 shadow-sm border border-teal-100 shrink-0">
-                   <Tag size={20} />
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
+                 <div className="flex items-center gap-3">
+                   <div className="bg-teal-50 p-2 rounded-lg text-teal-600 shadow-sm border border-teal-100 shrink-0">
+                     <Tag size={20} />
+                   </div>
+                   <div className="flex-1">
+                     <h4 className="font-bold text-gray-900 text-sm">Apply Coupon</h4>
+                     <p className="text-xs text-gray-500">
+                       {user ? 'Save more on your order' : 'Log in to view available offers'}
+                     </p>
+                   </div>
                  </div>
-                 <div>
-                   <h4 className="font-bold text-gray-900 text-sm">Apply Coupon</h4>
-                   <p className="text-xs text-gray-500 mt-0.5">Log in to view available offers</p>
-                 </div>
+
+                 {!appliedCoupon ? (
+                   <div className="space-y-3">
+                     <div className="flex gap-2">
+                       <input 
+                         type="text" 
+                         value={couponCode}
+                         onChange={(e) => setCouponCode(e.target.value)}
+                         placeholder="Enter Code"
+                         className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold focus:outline-none focus:border-teal-500 uppercase"
+                       />
+                       <button 
+                         onClick={() => handleApplyCoupon()}
+                         className="bg-teal-600 text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-teal-700 transition-colors"
+                       >
+                         Apply
+                       </button>
+                     </div>
+                     {couponError && <p className="text-xs text-red-500 font-bold ml-1">{couponError}</p>}
+                     
+                     {/* Recommended Coupon */}
+                     <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-center justify-between group transition-all hover:border-orange-200">
+                       <div>
+                         <div className="flex items-center gap-2">
+                           <span className="font-black text-orange-700 text-sm tracking-wider">FIRST100</span>
+                           <span className="bg-orange-200 text-orange-800 text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase">Recommended</span>
+                         </div>
+                         <p className="text-[10px] text-orange-600 font-bold mt-0.5">₹100 OFF on orders above ₹299</p>
+                       </div>
+                       <button 
+                         onClick={() => handleApplyCoupon('FIRST100')}
+                         className="text-orange-700 font-black text-xs hover:underline"
+                       >
+                         APPLY
+                       </button>
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-green-200 flex items-center justify-center text-green-700">
+                          <Tag size={12} />
+                         </div>
+                        <div>
+                          <p className="text-xs font-black text-green-800 tracking-wide uppercase">{appliedCoupon.code} Applied</p>
+                          <p className="text-[10px] text-green-600 font-bold">You saved ₹{appliedCoupon.discount}</p>
+                        </div>
+                      </div>
+                      <button onClick={removeCoupon} className="text-red-500 hover:text-red-700">
+                        <Trash2 size={16} />
+                      </button>
+                   </div>
+                 )}
               </div>
 
               {/* Summary Details */}
@@ -270,6 +366,15 @@ const CartPage = () => {
                     </span>
                   </div>
 
+                  {appliedCoupon && (
+                    <div className="flex justify-between items-center text-green-600 text-sm animate-in slide-in-from-top-1 duration-200">
+                      <span className="font-medium flex items-center gap-1.5">
+                        Coupon Discount ({appliedCoupon.code})
+                      </span>
+                      <span className="font-bold">-₹{appliedCoupon.discount}</span>
+                    </div>
+                  )}
+
                   <div className="pt-4 border-t border-dashed border-gray-200">
                     <div className="flex justify-between items-center">
                        <span className="font-bold text-gray-900 text-lg">Total Amount</span>
@@ -280,6 +385,11 @@ const CartPage = () => {
                         ✨ You saved ₹50 on delivery
                       </div>
                     )}
+                    {appliedCoupon && (
+                        <div className="mt-1 bg-blue-50 text-blue-700 text-[10px] font-black px-3 py-1.5 rounded-lg text-center border border-blue-100 uppercase tracking-tight">
+                          Total savings: ₹{(50 - deliveryCharge + appliedCoupon.discount).toFixed(0)} with this order!
+                        </div>
+                     )}
                   </div>
                 </div>
 

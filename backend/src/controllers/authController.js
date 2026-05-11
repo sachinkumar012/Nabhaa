@@ -1,9 +1,13 @@
+const axios = require("axios");
 const Otp = require("../models/otpModel");
 const Customer = require("../models/customerModel");
 const { sendOtpEmail } = require("../utils/emailService");
 const { sendOtpSms } = require("../utils/smsService");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT
 const generateToken = (id) => {
@@ -224,9 +228,78 @@ const getProfile = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Google Login
+ * @route   POST /api/auth/google-login
+ * @access  Public
+ */
+const googleLogin = async (req, res) => {
+  try {
+    const { token } = req.body;
+    console.log("[GOOGLE AUTH] Received token:", token ? "Token present" : "Token MISSING");
+
+    if (!token) {
+      return res.status(400).json({ success: false, message: "Google token is required" });
+    }
+
+    // Fetch user info from Google using access token
+    console.log("[GOOGLE AUTH] Fetching user info from Google...");
+    const response = await axios.get(`https://www.googleapis.com/oauth2/v3/userinfo`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const payload = response.data;
+    console.log("[GOOGLE AUTH] Google response data:", payload);
+    const { email, name, picture } = payload;
+
+    // Find or create customer
+    let customer = await Customer.findOne({ email });
+    console.log("[GOOGLE AUTH] Existing customer found:", customer ? "YES" : "NO");
+
+    if (customer) {
+      // Update provider and avatar if not already set or changed
+      customer.provider = "google";
+      if (picture) customer.avatar = picture;
+      await customer.save();
+    } else {
+      console.log("[GOOGLE AUTH] Creating new customer for:", email);
+      customer = await Customer.create({
+        email,
+        name,
+        avatar: picture,
+        provider: "google",
+      });
+    }
+
+    const jwtToken = generateToken(customer._id);
+    console.log("[GOOGLE AUTH] Login successful, returning token.");
+
+    res.status(200).json({
+      success: true,
+      message: "Google Login Successful",
+      user: customer,
+      token: jwtToken,
+    });
+  } catch (error) {
+    console.error("[GOOGLE AUTH] FATAL ERROR:", error.message);
+    if (error.response) {
+      console.error("[GOOGLE AUTH] Data:", error.response.data);
+      console.error("[GOOGLE AUTH] Status:", error.response.status);
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: "Google Authentication Failed",
+      error: error.message,
+      details: error.response?.data || null
+    });
+  }
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
   updateProfile,
   getProfile,
+  googleLogin,
 };

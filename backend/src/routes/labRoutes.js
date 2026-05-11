@@ -61,6 +61,41 @@ router.delete('/tests/:id', protect, authorize('pharmacist'), async (req, res) =
     }
 });
 
+// Get pharmacist's tests
+router.get('/pharmacist/tests', protect, authorize('pharmacist'), async (req, res) => {
+    try {
+        const tests = await LabTest.find({ pharmacist: req.user._id }).sort({ createdAt: -1 });
+        res.json({ success: true, data: tests });
+    } catch (error) {
+        console.error("Error fetching pharmacist tests:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Update booking status
+router.put('/bookings/:id/status', protect, authorize('pharmacist'), async (req, res) => {
+    try {
+        const { status } = req.body;
+        const booking = await LabBooking.findById(req.params.id);
+        
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        if (booking.pharmacist.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to update this booking' });
+        }
+
+        booking.status = status;
+        await booking.save();
+
+        res.json({ success: true, message: 'Booking status updated successfully', data: booking });
+    } catch (error) {
+        console.error("Error updating booking status:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // --- PUBLIC / PATIENT ROUTES ---
 
 // Request a callback — sends phone number to admin Gmail
@@ -184,7 +219,7 @@ router.get('/my-bookings', async (req, res) => {
 });
 
 // Get pharmacist's test bookings
-router.get('/pharmacist/bookings', async (req, res) => {
+router.get('/pharmacist/bookings', protect, authorize('pharmacist'), async (req, res) => {
     try {
         const pharmacistId = req.query.pharmacistId || (req.user && req.user._id);
 

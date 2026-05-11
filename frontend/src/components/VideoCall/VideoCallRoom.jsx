@@ -12,7 +12,10 @@ import {
   Copy,
   Share2,
   Users,
-  Clock
+  Clock,
+  History,
+  FileText,
+  Activity
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import socket from '../../utils/socket';
@@ -33,6 +36,7 @@ const VideoCallRoom = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [callDuration, setCallDuration] = useState(0);
+  const [activeSidebar, setActiveSidebar] = useState(null); // 'chat', 'history', 'prescription', null
 
   // Connection States
   const [connectionStatus, setConnectionStatus] = useState('initializing'); // initializing, connecting, connected, disconnected, failed
@@ -531,52 +535,113 @@ const VideoCallRoom = () => {
           </div>
         </div>
 
-        {/* Chat sidebar */}
-        {showChat && (
+        {/* Dynamic Sidebar (Chat, History, Prescription) */}
+        {activeSidebar && (
           <div style={styles.chatSidebar}>
             <div style={styles.chatHeader}>
-              <MessageSquare size={20} />
-              <span>Chat</span>
+              <div style={{ display: 'flex', gap: '16px', flex: 1 }}>
+                <button 
+                   onClick={() => setActiveSidebar('chat')}
+                   style={{...styles.sidebarTab, color: activeSidebar === 'chat' ? '#059669' : '#6b7280', borderBottom: activeSidebar === 'chat' ? '2px solid #059669' : 'none'}}
+                >
+                  <MessageSquare size={18} />
+                </button>
+                {userType === 'doctor' && (
+                  <>
+                    <button 
+                      onClick={() => setActiveSidebar('history')}
+                      style={{...styles.sidebarTab, color: activeSidebar === 'history' ? '#059669' : '#6b7280', borderBottom: activeSidebar === 'history' ? '2px solid #059669' : 'none'}}
+                    >
+                      <History size={18} />
+                    </button>
+                    <button 
+                      onClick={() => setActiveSidebar('prescription')}
+                      style={{...styles.sidebarTab, color: activeSidebar === 'prescription' ? '#059669' : '#6b7280', borderBottom: activeSidebar === 'prescription' ? '2px solid #059669' : 'none'}}
+                    >
+                      <FileText size={18} />
+                    </button>
+                  </>
+                )}
+              </div>
               <button
-                onClick={() => setShowChat(false)}
+                onClick={() => setActiveSidebar(null)}
                 style={styles.closeChatButton}
               >
                 ×
               </button>
             </div>
 
-            <div ref={chatRef} style={styles.chatMessages}>
-              {chatMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  style={{
-                    ...styles.chatMessage,
-                    alignSelf: msg.senderType === userType ? 'flex-end' : 'flex-start'
-                  }}
-                >
-                  <div style={styles.messageSender}>
-                    {msg.sender} ({msg.senderType})
+            <div style={styles.sidebarContent}>
+              {activeSidebar === 'chat' && (
+                <>
+                  <div ref={chatRef} style={styles.chatMessages}>
+                    {chatMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        style={{
+                          ...styles.chatMessage,
+                          alignSelf: msg.senderType === userType ? 'flex-end' : 'flex-start'
+                        }}
+                      >
+                        <div style={styles.messageSender}>
+                          {msg.sender} ({msg.senderType})
+                        </div>
+                        <div style={styles.messageText}>{msg.message}</div>
+                        <div style={styles.messageTime}>
+                          {new Date(msg.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div style={styles.messageText}>{msg.message}</div>
-                  <div style={styles.messageTime}>
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </div>
-                </div>
-              ))}
-            </div>
 
-            <div style={styles.chatInput}>
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Type a message..."
-                style={styles.messageInput}
-              />
-              <button onClick={handleSendMessage} style={styles.sendButton}>
-                Send
-              </button>
+                  <div style={styles.chatInput}>
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="Type a message..."
+                      style={styles.messageInput}
+                    />
+                    <button onClick={handleSendMessage} style={styles.sendButton}>
+                      Send
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {activeSidebar === 'history' && (
+                <div style={styles.toolContent}>
+                   <h4 style={{margin: '0 0 16px 0', fontSize: '16px'}}>Quick History</h4>
+                   <div style={styles.historyScroll}>
+                      <div style={styles.historyItem}>
+                         <div style={styles.historyDate}>12 Apr 2024</div>
+                         <div style={styles.historyReason}>Viral Fever - Written Rx</div>
+                      </div>
+                      <div style={styles.historyItem}>
+                         <div style={styles.historyDate}>05 Jan 2024</div>
+                         <div style={styles.historyReason}>General Checkup</div>
+                      </div>
+                      <p style={{fontSize: '12px', color: '#6b7280', textAlign: 'center', marginTop: '20px'}}>
+                        Open Patient Portal for full history
+                      </p>
+                   </div>
+                </div>
+              )}
+
+              {activeSidebar === 'prescription' && (
+                <div style={styles.toolContent}>
+                   <h4 style={{margin: '0 0 16px 0', fontSize: '16px'}}>Quick Rx</h4>
+                   <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                      <input placeholder="Diagnosis" style={styles.miniInput} />
+                      <textarea placeholder="Medicines (e.g. Paracetamol 500mg 1-0-1)" style={{...styles.miniInput, height: '80px'}} />
+                      <button style={styles.miniButton}>Save Draft</button>
+                      <p style={{fontSize: '11px', color: '#6b7280'}}>
+                        Draft will be saved to your dashboard.
+                      </p>
+                   </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -623,15 +688,40 @@ const VideoCallRoom = () => {
 
           {/* Chat toggle */}
           <button
-            onClick={() => setShowChat(!showChat)}
+            onClick={() => setActiveSidebar(activeSidebar === 'chat' ? null : 'chat')}
             style={{
               ...styles.controlButton,
-              backgroundColor: showChat ? '#059669' : '#374151'
+              backgroundColor: activeSidebar === 'chat' ? '#059669' : '#374151'
             }}
             title="Toggle Chat"
           >
             <MessageSquare size={20} />
           </button>
+
+          {userType === 'doctor' && (
+            <>
+              <button
+                onClick={() => setActiveSidebar(activeSidebar === 'history' ? null : 'history')}
+                style={{
+                  ...styles.controlButton,
+                  backgroundColor: activeSidebar === 'history' ? '#059669' : '#374151'
+                }}
+                title="View History"
+              >
+                <History size={20} />
+              </button>
+              <button
+                onClick={() => setActiveSidebar(activeSidebar === 'prescription' ? null : 'prescription')}
+                style={{
+                  ...styles.controlButton,
+                  backgroundColor: activeSidebar === 'prescription' ? '#059669' : '#374151'
+                }}
+                title="Write Rx"
+              >
+                <FileText size={20} />
+              </button>
+            </>
+          )}
 
           {/* Copy link */}
           <button
@@ -855,11 +945,82 @@ const styles = {
   },
 
   chatSidebar: {
-    width: '300px',
+    width: '350px',
     backgroundColor: 'white',
     display: 'flex',
     flexDirection: 'column',
     borderLeft: '1px solid #e5e7eb',
+    zIndex: 20
+  },
+
+  sidebarContent: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden'
+  },
+
+  sidebarTab: {
+    background: 'none',
+    border: 'none',
+    padding: '8px 4px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s'
+  },
+
+  toolContent: {
+    padding: '20px',
+    flex: 1,
+    overflowY: 'auto'
+  },
+
+  historyScroll: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+
+  historyItem: {
+    padding: '12px',
+    backgroundColor: '#f9fafb',
+    borderRadius: '8px',
+    borderLeft: '4px solid #3b82f6'
+  },
+
+  historyDate: {
+    fontSize: '10px',
+    fontWeight: '700',
+    color: '#3b82f6',
+    textTransform: 'uppercase',
+    marginBottom: '4px'
+  },
+
+  historyReason: {
+    fontSize: '13px',
+    color: '#374151',
+    fontWeight: '500'
+  },
+
+  miniInput: {
+    padding: '10px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    fontSize: '13px',
+    width: '100%'
+  },
+
+  miniButton: {
+    padding: '10px',
+    backgroundColor: '#059669',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer'
   },
 
   chatHeader: {

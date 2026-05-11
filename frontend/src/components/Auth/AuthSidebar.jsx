@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useGoogleLogin } from '@react-oauth/google';
 
 export default function AuthSidebar() {
     const { login, isAuthModalOpen, setAuthModalOpen } = useAuth();
@@ -63,6 +64,34 @@ export default function AuthSidebar() {
             setIsLoading(false);
         }
     };
+
+    const handleGoogleSuccess = async (tokenResponse) => {
+        setIsLoading(true);
+        try {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google-login`, {
+                token: tokenResponse.access_token
+            });
+
+            if (response.data.success) {
+                toast.success('Logged in with Google!');
+                login(response.data.user, response.data.token);
+                onClose();
+            }
+        } catch (error) {
+            console.error('Google Auth Error:', error);
+            if (error.response) {
+                console.error('Error Details:', error.response.data);
+            }
+            toast.error(error.response?.data?.message || 'Google login failed');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const googleLogin = useGoogleLogin({
+        onSuccess: handleGoogleSuccess,
+        onError: () => toast.error('Google Login Failed'),
+    });
 
     const handleBack = () => {
         setStep('email');
@@ -194,6 +223,29 @@ export default function AuthSidebar() {
                                     </>
                                 )}
                             </button>
+
+                            {step === 'email' && (
+                                <>
+                                    <div className="flex items-center my-6">
+                                        <div className="flex-1 h-px bg-gray-200"></div>
+                                        <span className="px-4 text-gray-400 text-sm font-medium">OR</span>
+                                        <div className="flex-1 h-px bg-gray-200"></div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => googleLogin()}
+                                        disabled={isLoading}
+                                        className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-3.5 rounded-xl border border-gray-300 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-3"
+                                    >
+                                        <img 
+                                            src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" 
+                                            alt="Google" 
+                                            className="w-5 h-5"
+                                        />
+                                        <span>Continue with Google</span>
+                                    </button>
+                                </>
+                            )}
 
                             <div className="mt-auto pt-6 text-xs text-gray-500 text-center leading-relaxed">
                                 By continuing, you agree to our{' '}

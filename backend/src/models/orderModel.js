@@ -81,6 +81,26 @@ const orderSchema = new mongoose.Schema({
         default: 'Pending',
         enum: ['Pending', 'Accepted', 'Processing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled', 'Rejected']
     },
+    statusHistory: [
+        {
+            status: { type: String },
+            timestamp: { type: Date, default: Date.now },
+            note: { type: String, default: '' }
+        }
+    ],
+    paymentLink: {
+        url: { type: String, default: '' },
+        linkId: { type: String, default: '' },
+        expiresAt: { type: Date }
+    },
+    notificationLog: [
+        {
+            type: { type: String },  // 'email' | 'socket' | 'push'
+            event: { type: String },
+            sentAt: { type: Date, default: Date.now },
+            success: { type: Boolean, default: true }
+        }
+    ],
     createdAt: {
         type: Date,
         default: Date.now

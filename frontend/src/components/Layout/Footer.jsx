@@ -3,10 +3,10 @@ import {
   Stethoscope, Phone, Mail, MapPin, 
   Facebook, Twitter, Instagram, ChevronRight 
 } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 export default function Footer() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <footer className="bg-gradient-to-br from-[#0F172A] to-[#1E293B] text-white pt-16 pb-6 mt-12 border-t mt-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">

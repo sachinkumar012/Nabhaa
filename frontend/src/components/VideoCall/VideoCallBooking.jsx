@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, Video, Phone, MessageCircle, User, MapPin } from 'lucide-react';
 import VideoConsultation from './VideoConsultation';
-import { useLanguage } from '../../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 const VideoCallBooking = ({ doctor, onClose }) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [appointmentData, setAppointmentData] = useState({
     type: 'video',
