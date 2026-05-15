@@ -4,7 +4,7 @@ const writtenPrescriptionSchema = new mongoose.Schema({
     patientId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Customer',
-        required: true
+        required: false  // Optional — walk-in patients won't have an account
     },
     doctorId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -21,7 +21,16 @@ const writtenPrescriptionSchema = new mongoose.Schema({
         age: Number,
         gender: String,
         weight: String,
-        phone: String
+        phone: String,
+        address: String,
+        date: String,
+        followUpDays: String
+    },
+    vitals: {
+        bp: String,
+        temp: String,
+        weight: String,
+        spo2: String
     },
     diagnosis: {
         type: String,

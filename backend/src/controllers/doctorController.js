@@ -204,21 +204,35 @@ const getPatientHistory = async (req, res) => {
 // @access  Private
 const createPrescription = async (req, res) => {
     try {
-        const { patientId, appointmentId, patientDetails, diagnosis, medicines, notes } = req.body;
+        const { patientId, appointmentId, patientDetails, diagnosis, medicines, notes, vitals, followUpDays } = req.body;
         const doctorId = req.user._id;
 
         const prescription = await WrittenPrescription.create({
-            patientId,
+            patientId: patientId || undefined,
             doctorId,
-            appointmentId,
-            patientDetails,
+            appointmentId: appointmentId || undefined,
+            patientDetails: { ...patientDetails, followUpDays },
             diagnosis,
             medicines,
             notes,
+            vitals,
             status: 'finalized'
         });
 
         res.status(201).json({ success: true, data: prescription });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Get all prescriptions created by this doctor
+// @route   GET /api/doctors/my-prescriptions
+// @access  Private
+const getMyPrescriptions = async (req, res) => {
+    try {
+        const doctorId = req.user._id;
+        const prescriptions = await WrittenPrescription.find({ doctorId }).sort({ createdAt: -1 });
+        res.json({ success: true, count: prescriptions.length, data: prescriptions });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -231,5 +245,6 @@ module.exports = {
     getDoctorProfile,
     getDoctorPatients,
     getPatientHistory,
-    createPrescription
+    createPrescription,
+    getMyPrescriptions
 };

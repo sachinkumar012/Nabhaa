@@ -29,8 +29,8 @@ const DoctorAppointments = () => {
         try {
             const token = localStorage.getItem('doctorToken');
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            await api.put(`/appointments/${id}/status`, { status: newStatus }, config);
-            toast.success(`Marked as ${newStatus}`);
+            await api.patch(`/appointments/${id}/status`, { status: newStatus }, config);
+            toast.success(`Appointment marked as ${newStatus}!`);
             fetchAppointments();
         } catch (error) {
             toast.error('Failed to update status');
